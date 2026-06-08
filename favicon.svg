@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="bg-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e3c72" />
+      <stop offset="100%" stop-color="#2a5298" />
+    </linearGradient>
+
+    <!-- Globe/Grid Gradient -->
+    <linearGradient id="globe-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#6dd5ed" stop-opacity="0.2" />
+      <stop offset="100%" stop-color="#2193b0" stop-opacity="0.0" />
+    </linearGradient>
+
+    <!-- UI/Card Gradient -->
+    <linearGradient id="card-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="100%" stop-color="#f0f4f8" />
+    </linearGradient>
+
+    <!-- Accent/Plane Gradient -->
+    <linearGradient id="accent-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00c6ff" />
+      <stop offset="100%" stop-color="#0072ff" />
+    </linearGradient>
+
+    <!-- Drop Shadows -->
+    <filter id="shadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#0b1a30" flood-opacity="0.4" />
+    </filter>
+    <filter id="plane-shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="-4" dy="8" stdDeviation="6" flood-color="#0b1a30" flood-opacity="0.3" />
+    </filter>
+  </defs>
+
+  <!-- Base App Icon Background -->
+  <rect width="512" height="512" rx="112" fill="url(#bg-grad)" />
+
+  <!-- Abstract Globe Lines (Travel Theme) -->
+  <circle cx="256" cy="256" r="200" fill="url(#globe-grad)" stroke="#6dd5ed" stroke-width="2" stroke-opacity="0.3" />
+  <path d="M 56 256 QE 256 120 456 256" fill="none" stroke="#6dd5ed" stroke-width="2" stroke-dasharray="6 6" stroke-opacity="0.25" />
+  <path d="M 56 256 QE 256 392 456 256" fill="none" stroke="#6dd5ed" stroke-width="2" stroke-dasharray="6 6" stroke-opacity="0.25" />
+  <line x1="256" y1="56" x2="256" y2="456" stroke="#6dd5ed" stroke-width="2" stroke-opacity="0.15" />
+
+  <!-- The "Generated Itinerary" UI Card Layout -->
+  <g filter="url(#shadow)">
+    <!-- Main Ticket/Card Body -->
+    <rect x="126" y="146" width="260" height="240" rx="24" fill="url(#card-grad)" />
+    
+    <!-- Ticket/Card Header (Simulated App Header) -->
+    <path d="M 126 170 A 24 24 0 0 1 150 146 L 362 146 A 24 24 0 0 1 386 170 L 386 200 L 126 200 Z" fill="#e1ecf7" />
+    <circle cx="156" cy="173" r="6" fill="#ff5f56" />
+    <circle cx="176" cy="173" r="6" fill="#ffbd2e" />
+    <circle cx="196" cy="173" r="6" fill="#27c93f" />
+
+    <!-- Simulated UI Layout / Code Lines / Itinerary Data -->
+    <rect x="156" y="224" width="140" height="14" rx="7" fill="#0072ff" opacity="0.8" />
+    <rect x="156" y="254" width="200" height="10" rx="5" fill="#90a4ae" opacity="0.4" />
+    <rect x="156" y="278" width="160" height="10" rx="5" fill="#90a4ae" opacity="0.4" />
+    
+    <!-- Decorative Travel Badge / Stamp on Card -->
+    <rect x="306" y="310" width="50" height="50" rx="12" fill="#00c6ff" opacity="0.15" />
+    <circle cx="331" cy="336" r="14" fill="none" stroke="#0072ff" stroke-width="2" stroke-dasharray="3 2" opacity="0.6" />
+  </g>
+
+  <!-- Rocketing Airplane (The "Generator" Aspect) -->
+  <g filter="url(#plane-shadow)">
+    <!-- Dotted Flight Path Path / Jetstream -->
+    <path d="M 90 420 C 130 380, 180 300, 310 210" fill="none" stroke="#00c6ff" stroke-width="6" stroke-linecap="round" stroke-dasharray="1 16" />
+    
+    <!-- Smooth Paper-Airplane / Jet Hybrid Style Profile -->
+    <!-- Pointing dynamically up and to the right -->
+    <path d="M 390 130 
+             L 345 225 
+             L 315 205 
+             L 320 170 
+             L 295 185 
+             L 285 165 
+             L 300 155 
+             L 280 145 
+             Z" 
+          fill="url(#accent-grad)" />
+          
+    <!-- Flight Wing Highlight/Fold Line -->
+    <path d="M 390 130 L 315 205 L 340 175 Z" fill="#ffffff" opacity="0.35" />
+  </g>
+</svg>
