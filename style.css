@@ -429,13 +429,13 @@ textarea:focus {
 header, .header-container {
     display: flex;
     align-items: center;
-    justify-content: flex-start;
+    justify-content: center;
     gap: 12px;
     width: 100%;
     max-width: 100%;
     padding: 10px 15px;
     box-sizing: border-box;
-    overflow: hidden; /* Prevents stray contents from causing page scroll */
+    overflow: hidden;
 }
 
 /* Fix for the SVG Logo going out of bounds */
