@@ -475,3 +475,13 @@ header h1, .header-title {
     color: var(--text-muted);
     opacity: 0.6;
 }
+
+.header-subtitle {
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin: 0;
+    text-align: center;
+}
