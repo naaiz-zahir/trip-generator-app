@@ -462,3 +462,16 @@ header h1, .header-title {
         font-size: 1.2rem;
     }
 }
+
+.app-footer {
+    margin-top: 32px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    text-align: center;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    opacity: 0.6;
+}
