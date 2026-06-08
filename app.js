@@ -63,21 +63,34 @@ function populateDropdown(elementId, items) {
     if (items.includes(current)) dropdown.value = current;
 }
 
-function populateCheckboxes(containerId, items, nameAttr) {
+function populateCheckboxes(containerId, itemsArray, inputName) {
     const container = document.getElementById(containerId);
-    const checked   = new Set(
-        Array.from(container.querySelectorAll('input:checked')).map(el => el.value)
-    );
-    container.innerHTML = "";
-    items.forEach((item, index) => {
+    if (!container) return;
+    container.innerHTML = '';
+
+    itemsArray.forEach(item => {
         const div = document.createElement('div');
         div.className = 'checkbox-item';
-        div.innerHTML = `
-            <input type="checkbox" id="${nameAttr}-${index}" value="${item}" name="${nameAttr}"
-                ${checked.has(item) ? 'checked' : ''}
-                onchange="generateMessage()">
-            <label for="${nameAttr}-${index}">${item}</label>
-        `;
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.name = inputName;
+        // The value keeps the full string (with phone number) for the generator
+        checkbox.value = item; 
+        checkbox.addEventListener('change', generateMessage);
+
+        const label = document.createElement('label');
+        
+        // If it's a crew member and contains the ' — ' separator, split it
+        if (inputName === 'crew' && item.includes(' — ')) {
+            // Only show the name/rank part in the UI label
+            label.textContent = item.split(' — ')[0]; 
+        } else {
+            label.textContent = item;
+        }
+
+        div.appendChild(checkbox);
+        div.appendChild(label);
         container.appendChild(div);
     });
 }
