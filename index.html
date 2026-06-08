@@ -38,15 +38,9 @@
             </div>
         </div>
 
-        <div class="form-row">
-            <div class="form-group">
-                <label for="departureTime">Time of Departure</label>
-                <input type="time" id="departureTime">
-            </div>
-            <div class="form-group">
-                <label for="arrivalTime">Time of Arrival</label>
-                <input type="time" id="arrivalTime">
-            </div>
+        <div class="form-group">
+            <label for="departureTime">Time of Departure</label>
+            <input type="time" id="departureTime">
         </div>
 
         <div class="form-group">
@@ -87,14 +81,19 @@
         <hr>
 
         <div class="form-group">
-            <label>Message Preview</label>
+            <label>Departure Message Preview</label>
             <textarea id="messagePreview" readonly rows="12"></textarea>
         </div>
 
         <button id="copyBtn" class="primary-btn">Copy Departure Message</button>
 
         <hr style="margin: 20px 0; border: 0; border-top: 1px dashed #ccc;">
-
+        
+        <div class="form-group">
+            <label for="arrivalTime">Actual Arrival Time</label>
+            <input type="time" id="arrivalTime">
+        </div>
+        
         <div class="form-group">
             <label>Arrival Message Preview</label>
             <textarea id="arrivalMessagePreview" readonly rows="4"></textarea>
