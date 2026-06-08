@@ -340,3 +340,19 @@ textarea:focus {
     transform: translateY(1px);
     box-shadow: 0 2px 10px rgba(0, 194, 203, 0.2);
 }
+
+.header-container {
+    display: flex;
+    align-items: center;  /* Vertically centers logo and text */
+    gap: 12px;            /* Spacing between the logo and the heading */
+    margin-bottom: 20px;  /* Optional: keeps space below the header */
+}
+
+.header-logo {
+    height: 1.8rem;       /* Automatically matches the approximate height of your h2 text */
+    width: auto;          /* Maintains the logo's original proportions */
+}
+
+.header-container h2 {
+    margin: 0;            /* Removes default margins that might throw off alignment */
+}
