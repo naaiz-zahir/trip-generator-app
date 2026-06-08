@@ -30,10 +30,11 @@ async function initDatabase() {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
 
-        boats     = [...(data.boats     || [])];
-        locations = [...(data.locations || [])];
-        crew      = [...(data.crew      || [])];
-        divers    = [...(data.divers    || [])];
+        // Extract and sort each list in ascending alphabetical order (.sort())
+        boats     = [...(data.boats     || [])].sort();
+        locations = [...(data.locations || [])].sort(); // Optional: sorts locations too!
+        crew      = [...(data.crew      || [])].sort();
+        divers    = [...(data.divers    || [])].sort();
 
         refreshUI();
         generateMessage();
