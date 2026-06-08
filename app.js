@@ -124,10 +124,12 @@ async function addNewItem(elementId, typeLabel) {
         await saveToBackend(categoryMap[typeLabel], trimmed);
         if (typeLabel === 'Boats') {
             boats.push(trimmed);
+            boats.sort(); // <-- Add this to sort boats after adding
             populateDropdown('boatName', boats);
             document.getElementById('boatName').value = trimmed;
         } else {
             locations.push(trimmed);
+            locations.sort(); // <-- Add this to sort locations after adding
             populateDropdown('departureFrom', locations);
             populateDropdown('destinationTo', locations);
         }
@@ -161,9 +163,11 @@ async function addNewCheckboxItem(containerId, typeLabel) {
         await saveToBackend(categoryMap[typeLabel], trimmed);
         if (typeLabel === 'Crew') {
             crew.push(trimmed);
+            crew.sort(); // <-- Add this to sort crew after adding
             populateCheckboxes('crewContainer', crew, 'crew');
         } else {
             divers.push(trimmed);
+            divers.sort(); // <-- Add this to sort divers after adding
             populateCheckboxes('diversContainer', divers, 'diver');
         }
         showToast(`✅ "${trimmed}" saved`);
