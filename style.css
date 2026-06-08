@@ -343,26 +343,38 @@ textarea:focus {
 
 .header-container {
     display: flex;
-    align-items: center; /* Vertically center the logo and text */
-    justify-content: flex-start; /* Left align the container content */
-    gap: 1rem; /* Add some space between the logo and text */
-    margin-bottom: 20px;
-    width: 100%; /* Ensure container takes full width */
-    overflow: hidden; /* Prevent overflow if title is too long */
+    align-items: stretch;     /* Important: Stretches the logo height to match the text box height */
+    justify-content: flex-start;
+    gap: 1.2rem;              /* Spacing between logo and text */
+    margin-bottom: 24px;
+    width: 100%;
 }
 
 .header-logo {
-    height: 3rem; /* Increase the logo size to look bigger than the text */
-    width: auto; /* Maintain aspect ratio */
+    height: auto;             /* Allows 'align-items: stretch' to dictate the height */
+    width: auto;              /* Keeps the logo's aspect ratio perfectly intact */
     display: block;
 }
 
-.header-container h2 {
-    font-size: 1.5rem; /* Decrease the heading text size */
-    margin: 0; /* Remove default margins */
-    flex: 1; /* Allow the text to take remaining space, effectively left aligning it */
-    white-space: nowrap; /* Prevent text wrapping to keep on one line */
-    overflow: hidden; /* Hide overflowing text if it's too long */
-    text-overflow: ellipsis; /* Add an ellipsis for overflowing text */
-    text-align: left; /* Explicitly set text alignment to left */
+.header-text-group {
+    display: flex;
+    flex-direction: column;   /* Stacks the heading and subheading vertically */
+    justify-content: center;  /* Centers them vertically against the logo */
+    text-align: left;
+}
+
+.header-text-group h2 {
+    font-size: 2.2rem;        /* Prominent main acronym */
+    font-weight: 700;
+    line-height: 1.1;         /* Tight line height to prevent dead space */
+    margin: 0;
+    letter-spacing: -0.5px;
+}
+
+.header-text-group .subheading {
+    font-size: 0.95rem;       /* Smaller, clean font size for the full name */
+    color: #64748b;           /* Optional: A muted slate color so it doesn't compete with the main title */
+    line-height: 1.2;
+    margin: 4px 0 0 0;        /* 4px gap exactly between the main title and subheading */
+    white-space: nowrap;      /* Keeps the subheading cleanly on a single line */
 }
