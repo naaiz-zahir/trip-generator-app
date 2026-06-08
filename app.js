@@ -261,9 +261,7 @@ document.getElementById('copyBtn').addEventListener('click', () => {
 
 // 1. Departure Viber Share
 document.getElementById('viber-share-btn').addEventListener('click', function() {
-    // CHANGE 'departure-preview' to match the actual ID of your departure text box
-    const departureEl = document.getElementById('departure-preview'); 
-    const departureText = departureEl ? departureEl.innerText.trim() : '';
+    const departureText = document.getElementById('messagePreview').value.trim();
     
     if (!departureText) {
         alert('There is no departure message to share yet.');
@@ -289,9 +287,7 @@ document.getElementById('copyArrivalBtn').addEventListener('click', () => {
 
 // 2. Arrival Viber Share
 document.getElementById('viber-share-arrival-btn').addEventListener('click', function() {
-    // CHANGE 'arrival-preview' to match the actual ID of your arrival text box
-    const arrivalEl = document.getElementById('arrival-preview'); 
-    const arrivalText = arrivalEl ? arrivalEl.innerText.trim() : '';
+    const arrivalText = document.getElementById('arrivalMessagePreview').value.trim();
     
     if (!arrivalText) {
         alert('There is no arrival message to share yet.');
