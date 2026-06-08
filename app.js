@@ -158,7 +158,12 @@ function generateMessage() {
     const selectedDivers = Array.from(document.querySelectorAll('input[name="diver"]:checked')).map(el => el.value);
 
     const crewText   = selectedCrew.length   > 0 ? selectedCrew.map(n   => `- ${n}`).join('\n') : '[Crew members]';
-    const diversText = selectedDivers.length > 0 ? selectedDivers.map(n => `- ${n}`).join('\n') : '[Divers]';
+    
+    // Create the entire Divers Block dynamically.
+    // If divers are selected, it includes the block header and items; otherwise, it stays completely empty.
+    const diversBlock = selectedDivers.length > 0 
+        ? `\nDIVERS LIST\n${selectedDivers.map(n => `- ${n}`).join('\n')}\n` 
+        : '';
 
     document.getElementById('messagePreview').value =
 `${boatName} Departure from ${departure} to ${destination}
@@ -166,10 +171,7 @@ Time: ${departureTime}
 
 CREW LIST
 ${crewText}
-
-DIVERS LIST
-${diversText}
-
+${diversBlock}
 Distance: ${distanceVal} nm
 Fuel Consumed: ${fuelConsumed} L`;
 }
