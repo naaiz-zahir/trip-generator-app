@@ -210,7 +210,7 @@ function generateMessage() {
             const arrMinutes = String(arrivalDate.getMinutes()).padStart(2, '0');
             
             // This goes only to the departure message text template
-            arrivalTimeBlock = `Estimated Arrival Time: ${arrHours}:${arrMinutes}\n`;
+            arrivalTimeBlock = `Estimated Arrival ${"@"}${arrHours}:${arrMinutes}\n`;
         }
 
         metricsBlock = `\nDistance: ${distanceVal} nm
@@ -234,8 +234,7 @@ Estimated Fuel Consumed: ${fuelConsumed} L`;
 
     // 1. Departure Message: Always uses the mathematically calculated auto-time
     document.getElementById('messagePreview').value =
-`${boatName} Departure from ${departure} to ${destination}
-Departure Time: ${departureTime}
+`${boatName} departure from ${departure} to ${destination} ${"@"}${departureTime}
 ${arrivalTimeBlock}
 CREW LIST
 ${crewText}
@@ -243,8 +242,7 @@ ${diversBlock}${metricsBlock}`;
 
     // 2. Arrival Message: Uses the isolated input field from the bottom of the form
     document.getElementById('arrivalMessagePreview').value =
-`${boatName} has arrived safely at ${destination}.
-Arrival Time: ${actualArrivalTimeVal || '--:--'}`;
+`${boatName} arv to ${destination} ${"@"}${actualArrivalTimeVal || '--:--'}`;
 }
 
 // ── Copy Button (Departure) ──────────────────────────────────────────────────
