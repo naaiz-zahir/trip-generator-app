@@ -249,28 +249,45 @@ ${diversBlock}${metricsBlock}`;
 Arrival Time: ${currentActualTime}`;
 }
 
-// ── Copy Button ───────────────────────────────────────────────────────────────
+// ── Copy Button (Departure) ──────────────────────────────────────────────────
 document.getElementById('copyBtn').addEventListener('click', () => {
     const messageArea = document.getElementById('messagePreview');
     if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(messageArea.value)
-            .then(alertFlash)
+            .then(() => alertFlash('copyBtn'))
             .catch(err => alert("Copy failed: " + err));
     } else {
         messageArea.select();
         document.execCommand('copy');
-        alertFlash();
+        alertFlash('copyBtn');
     }
 });
 
-function alertFlash() {
-    const btn = document.getElementById('copyBtn');
+// ── Copy Button (Arrival) ────────────────────────────────────────────────────
+document.getElementById('copyArrivalBtn').addEventListener('click', () => {
+    const messageArea = document.getElementById('arrivalMessagePreview');
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(messageArea.value)
+            .then(() => alertFlash('copyArrivalBtn'))
+            .catch(err => alert("Copy failed: " + err));
+    } else {
+        messageArea.select();
+        document.execCommand('copy');
+        alertFlash('copyArrivalBtn');
+    }
+});
+
+// Updated flash function to handle multiple button IDs dynamically
+function alertFlash(btnId) {
+    const btn = document.getElementById(btnId);
     const originalText = btn.textContent;
+    const originalBg = btn.style.background;
+    
     btn.textContent = "✅ Copied to Clipboard!";
     btn.style.background = "linear-gradient(135deg, #28a745, #1e7e34)";
     setTimeout(() => {
         btn.textContent = originalText;
-        btn.style.background = "";
+        btn.style.background = originalBg;
     }, 2000);
 }
 
