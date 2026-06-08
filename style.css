@@ -428,34 +428,31 @@ textarea:focus {
 /* Header Container Fix */
 header, .header-container {
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 12px;
+    gap: 8px;
     width: 100%;
-    max-width: 100%;
-    padding: 10px 15px;
+    padding: 16px 0 8px;
     box-sizing: border-box;
-    overflow: hidden;
+    text-align: center;
 }
 
 /* Fix for the SVG Logo going out of bounds */
 header img, .header-logo {
-    width: 40px;          /* Forces a manageable size */
-    height: 40px;         /* Maintains a clean 1:1 aspect ratio */
+    width: 56px;
+    height: 56px;
     max-width: 100%;
     object-fit: contain;
-    flex-shrink: 0;       /* Stops the logo from squishing */
+    flex-shrink: 0;
 }
 
-/* Fix for the Title Text */
 header h1, .header-title {
-    font-size: 1.5rem;    /* Fluid size for titles */
+    font-size: 1.6rem;
     margin: 0;
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis; /* Gracefully truncates text if the screen is microscopic */
-    flex-grow: 1;
-    min-width: 0;         /* Essential sub-flex fix for text truncation */
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
 }
 
 /* Responsive adjustment for extra-small screens */
