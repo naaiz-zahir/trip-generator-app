@@ -343,19 +343,26 @@ textarea:focus {
 
 .header-container {
     display: flex;
-    align-items: center;  /* Perfectly centers them horizontally on the same line */
-    gap: 0.6rem;          /* Proportional spacing between logo and text */
+    align-items: center; /* Vertically center the logo and text */
+    justify-content: flex-start; /* Left align the container content */
+    gap: 1rem; /* Add some space between the logo and text */
     margin-bottom: 20px;
+    width: 100%; /* Ensure container takes full width */
+    overflow: hidden; /* Prevent overflow if title is too long */
 }
 
 .header-logo {
-    height: 2rem;         /* Forces the logo to match the visual scale of the H2 */
-    width: auto;          /* Keeps the SVG aspect ratio intact */
-    display: block;       /* Removes any default inline text spacing below the image */
+    height: 3rem; /* Increase the logo size to look bigger than the text */
+    width: auto; /* Maintain aspect ratio */
+    display: block;
 }
 
 .header-container h2 {
-    font-size: 2rem;      /* Explicitly defines the text size to match the logo */
-    line-height: 1;       /* Tightens the text box to prevent invisible padding */
-    margin: 0;            /* Removes default browser margins */
+    font-size: 1.5rem; /* Decrease the heading text size */
+    margin: 0; /* Remove default margins */
+    flex: 1; /* Allow the text to take remaining space, effectively left aligning it */
+    white-space: nowrap; /* Prevent text wrapping to keep on one line */
+    overflow: hidden; /* Hide overflowing text if it's too long */
+    text-overflow: ellipsis; /* Add an ellipsis for overflowing text */
+    text-align: left; /* Explicitly set text alignment to left */
 }
