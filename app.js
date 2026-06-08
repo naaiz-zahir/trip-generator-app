@@ -121,9 +121,25 @@ async function addNewItem(elementId, typeLabel) {
 }
 
 async function addNewCheckboxItem(containerId, typeLabel) {
-    const newItem = prompt(`Enter new ${typeLabel.toLowerCase()} name:`);
-    if (!newItem || newItem.trim() === "") return;
-    const trimmed = newItem.trim();
+    let trimmed = "";
+
+    if (typeLabel === 'Crew') {
+        // Step 1: Prompt for Crew Name, Rank, and Service Number
+        const crewDetails = prompt("Enter crew name, rank, and number (e.g., LCPL Ishaaq Shareef (8689)):");
+        if (!crewDetails || crewDetails.trim() === "") return;
+
+        // Step 2: Prompt for Phone Number
+        const phoneNumber = prompt("Enter phone number (e.g., +9607123456):");
+        if (!phoneNumber || phoneNumber.trim() === "") return;
+
+        // Combine them into the exact format requested
+        trimmed = `${crewDetails.trim()} — ${phoneNumber.trim()}`;
+    } else {
+        // Standard prompt for divers
+        const newItem = prompt(`Enter new ${typeLabel.toLowerCase()} name:`);
+        if (!newItem || newItem.trim() === "") return;
+        trimmed = newItem.trim();
+    }
 
     const categoryMap = { 'Crew': 'crew', 'Divers': 'divers' };
     try {
