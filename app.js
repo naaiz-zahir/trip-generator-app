@@ -138,7 +138,7 @@ async function addNewCheckboxItem(containerId, typeLabel) {
 
     if (typeLabel === 'Crew') {
         // Step 1: Prompt for Crew Name, Rank, and Service Number
-        const crewDetails = prompt("Enter crew name, rank, and number (e.g., LCPL Ishaaq Shareef (8689)):");
+        const crewDetails = prompt("Enter crew rank, name, and service number (e.g., LCPL Ishaaq Shareef (8689)):");
         if (!crewDetails || crewDetails.trim() === "") return;
 
         // Step 2: Prompt for Phone Number
