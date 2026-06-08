@@ -226,10 +226,10 @@ Estimated Fuel Consumed: ${fuelConsumed} L`;
     const selectedCrew   = Array.from(document.querySelectorAll('input[name="crew"]:checked')).map(el => el.value);
     const selectedDivers = Array.from(document.querySelectorAll('input[name="diver"]:checked')).map(el => el.value);
 
-    const crewText   = selectedCrew.length   > 0 ? selectedCrew.map(n   => `- ${n}`).join('\n') : '[Crew members]';
+    const crewText   = selectedCrew.length   > 0 ? selectedCrew.map(n   => `• ${n}`).join('\n') : '[Crew members]';
     
     const diversBlock = selectedDivers.length > 0 
-        ? `\nDIVERS LIST\n${selectedDivers.map(n => `- ${n}`).join('\n')}\n` 
+        ? `\nDIVERS LIST\n${selectedDivers.map(n => `• ${n}`).join('\n')}\n` 
         : '';
 
     // 1. Departure Message: Always uses the mathematically calculated auto-time
