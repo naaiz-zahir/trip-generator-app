@@ -1,6 +1,4 @@
 // ── Config ───────────────────────────────────────────────────────────────────
-// Replace this with your Railway backend URL once deployed.
-// Example: 'https://trip-app-production.up.railway.app'
 const BACKEND_URL = 'https://trip-generator-production.up.railway.app';
 
 // ── State ─────────────────────────────────────────────────────────────────────
@@ -17,8 +15,12 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById('departureTime').value =
         `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
 
-    ['boatName','departureFrom','destinationTo','departureTime','distance','fuelBurn']
-        .forEach(id => document.getElementById(id).addEventListener('input', generateMessage));
+    // Added listeners for speed and fuelBurnPerHour inputs
+    ['boatName','departureFrom','destinationTo','departureTime','distance','speed','fuelBurnPerHour']
+        .forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.addEventListener('input', generateMessage);
+        });
 });
 
 // Loads the database from the Railway backend
@@ -63,28 +65,30 @@ function populateDropdown(elementId, items) {
     if (items.includes(current)) dropdown.value = current;
 }
 
-function populateCheckboxes(containerId, itemsArray, inputName) {
+function populateCheckboxes(containerId, items, nameAttr) {
     const container = document.getElementById(containerId);
-    if (!container) return;
-    container.innerHTML = '';
-
-    itemsArray.forEach(item => {
+    const checked   = new Set(
+        Array.from(container.querySelectorAll('input:checked')).map(el => el.value)
+    );
+    container.innerHTML = "";
+    items.forEach((item, index) => {
         const div = document.createElement('div');
         div.className = 'checkbox-item';
-
+        
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
-        checkbox.name = inputName;
-        // The value keeps the full string (with phone number) for the generator
-        checkbox.value = item; 
+        checkbox.id = `${nameAttr}-${index}`;
+        checkbox.value = item; // Stores full database string (with phone number)
+        checkbox.name = nameAttr;
+        if (checked.has(item)) checkbox.checked = true;
         checkbox.addEventListener('change', generateMessage);
 
         const label = document.createElement('label');
+        label.setAttribute('for', `${nameAttr}-${index}`);
         
-        // If it's a crew member and contains the ' — ' separator, split it
-        if (inputName === 'crew' && item.includes(' — ')) {
-            // Only show the name/rank part in the UI label
-            label.textContent = item.split(' — ')[0]; 
+        // Hides mobile number from frontend checkbox listing
+        if (nameAttr === 'crew' && item.includes(' — ')) {
+            label.textContent = item.split(' — ')[0];
         } else {
             label.textContent = item;
         }
@@ -137,18 +141,15 @@ async function addNewCheckboxItem(containerId, typeLabel) {
     let trimmed = "";
 
     if (typeLabel === 'Crew') {
-        // Step 1: Prompt for Crew Name, Rank, and Service Number
-        const crewDetails = prompt("Enter crew rank, name, and service number (e.g., LCPL Ishaaq Shareef (8689)):");
+        // Updated input formats
+        const crewDetails = prompt("Enter crew name and rank/service details (e.g., 7479 SGT Ahmed Sham):");
         if (!crewDetails || crewDetails.trim() === "") return;
 
-        // Step 2: Prompt for Phone Number
-        const phoneNumber = prompt("Enter phone number (e.g., +9607123456):");
+        const phoneNumber = prompt("Enter phone number (e.g., 9486171):");
         if (!phoneNumber || phoneNumber.trim() === "") return;
 
-        // Combine them into the exact format requested
         trimmed = `${crewDetails.trim()} — ${phoneNumber.trim()}`;
     } else {
-        // Standard prompt for divers
         const newItem = prompt(`Enter new ${typeLabel.toLowerCase()} name:`);
         if (!newItem || newItem.trim() === "") return;
         trimmed = newItem.trim();
@@ -173,14 +174,37 @@ async function addNewCheckboxItem(containerId, typeLabel) {
 
 // ── Message Generator ─────────────────────────────────────────────────────────
 function generateMessage() {
-    const boatName      = document.getElementById('boatName').value      || '[Boat Name]';
-    const departure     = document.getElementById('departureFrom').value  || '[]';
-    const destination   = document.getElementById('destinationTo').value  || '[]';
-    const departureTime = document.getElementById('departureTime').value  || '';
-    const distanceVal   = parseFloat(document.getElementById('distance').value)  || 0;
-    const fuelBurnVal   = parseFloat(document.getElementById('fuelBurn').value)  || 0;
+    const boatName         = document.getElementById('boatName').value         || '[Boat Name]';
+    const departure        = document.getElementById('departureFrom').value    || '[]';
+    const destination      = document.getElementById('destinationTo').value    || '[]';
+    const departureTime    = document.getElementById('departureTime').value    || '';
+    const distanceVal      = parseFloat(document.getElementById('distance').value)      || 0;
+    const speedVal         = parseFloat(document.getElementById('speed').value)         || 0;
+    const fuelBurnPerHour  = parseFloat(document.getElementById('fuelBurnPerHour').value) || 0;
 
-    const fuelConsumed = (distanceVal * fuelBurnVal).toFixed(1);
+    // 1. Time-based Fuel Calculation Algorithm
+    let fuelConsumed = (0).toFixed(1);
+    let arrivalTimeText = '--:--';
+
+    if (distanceVal > 0 && speedVal > 0) {
+        const hoursNeeded = distanceVal / speedVal;
+        fuelConsumed = (hoursNeeded * fuelBurnPerHour).toFixed(1);
+
+        // 2. ETA Calculation String parsing
+        if (departureTime) {
+            const [depHours, depMinutes] = departureTime.split(':').map(Number);
+            const totalMinutesNeeded = Math.round(hoursNeeded * 60);
+
+            const arrivalDate = new Date();
+            arrivalDate.setHours(depHours);
+            arrivalDate.setMinutes(depMinutes + totalMinutesNeeded);
+
+            const arrHours = String(arrivalDate.getHours()).padStart(2, '0');
+            const arrMinutes = String(arrivalDate.getMinutes()).padStart(2, '0');
+            arrivalTimeText = `${arrHours}:${arrMinutes}`;
+        }
+    }
+    
     document.getElementById('fuelCalculated').textContent = fuelConsumed;
 
     const selectedCrew   = Array.from(document.querySelectorAll('input[name="crew"]:checked')).map(el => el.value);
@@ -188,21 +212,21 @@ function generateMessage() {
 
     const crewText   = selectedCrew.length   > 0 ? selectedCrew.map(n   => `- ${n}`).join('\n') : '[Crew members]';
     
-    // Create the entire Divers Block dynamically.
-    // If divers are selected, it includes the block header and items; otherwise, it stays completely empty.
     const diversBlock = selectedDivers.length > 0 
         ? `\nDIVERS LIST\n${selectedDivers.map(n => `- ${n}`).join('\n')}\n` 
         : '';
 
     document.getElementById('messagePreview').value =
 `${boatName} Departure from ${departure} to ${destination}
-Time: ${departureTime}
+Departure Time: ${departureTime}
+Estimated Arrival Time: ${arrivalTimeText}
 
 CREW LIST
 ${crewText}
 ${diversBlock}
 Distance: ${distanceVal} nm
-Fuel Consumed: ${fuelConsumed} L`;
+Speed: ${speedVal} knots
+Estimated Fuel Consumed: ${fuelConsumed} L`;
 }
 
 // ── Copy Button ───────────────────────────────────────────────────────────────
