@@ -424,3 +424,43 @@ textarea:focus {
     height: 22px;
     display: block;
 }
+
+/* Header Container Fix */
+header, .header-container {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 12px;
+    width: 100%;
+    max-width: 100%;
+    padding: 10px 15px;
+    box-sizing: border-box;
+    overflow: hidden; /* Prevents stray contents from causing page scroll */
+}
+
+/* Fix for the SVG Logo going out of bounds */
+header img, .header-logo {
+    width: 40px;          /* Forces a manageable size */
+    height: 40px;         /* Maintains a clean 1:1 aspect ratio */
+    max-width: 100%;
+    object-fit: contain;
+    flex-shrink: 0;       /* Stops the logo from squishing */
+}
+
+/* Fix for the Title Text */
+header h1, .header-title {
+    font-size: 1.5rem;    /* Fluid size for titles */
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis; /* Gracefully truncates text if the screen is microscopic */
+    flex-grow: 1;
+    min-width: 0;         /* Essential sub-flex fix for text truncation */
+}
+
+/* Responsive adjustment for extra-small screens */
+@media (max-width: 360px) {
+    header h1, .header-title {
+        font-size: 1.2rem;
+    }
+}
