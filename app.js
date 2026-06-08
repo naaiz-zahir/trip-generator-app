@@ -259,6 +259,20 @@ document.getElementById('copyBtn').addEventListener('click', () => {
     }
 });
 
+// 1. Departure Viber Share
+document.getElementById('viber-share-btn').addEventListener('click', function() {
+    // CHANGE 'departure-preview' to match the actual ID of your departure text box
+    const departureEl = document.getElementById('departure-preview'); 
+    const departureText = departureEl ? departureEl.innerText.trim() : '';
+    
+    if (!departureText) {
+        alert('There is no departure message to share yet.');
+        return;
+    }
+    
+    window.location.href = `viber://forward?text=${encodeURIComponent(departureText)}`;
+});
+
 // ── Copy Button (Arrival) ────────────────────────────────────────────────────
 document.getElementById('copyArrivalBtn').addEventListener('click', () => {
     const messageArea = document.getElementById('arrivalMessagePreview');
@@ -271,6 +285,20 @@ document.getElementById('copyArrivalBtn').addEventListener('click', () => {
         document.execCommand('copy');
         alertFlash('copyArrivalBtn');
     }
+});
+
+// 2. Arrival Viber Share
+document.getElementById('viber-share-arrival-btn').addEventListener('click', function() {
+    // CHANGE 'arrival-preview' to match the actual ID of your arrival text box
+    const arrivalEl = document.getElementById('arrival-preview'); 
+    const arrivalText = arrivalEl ? arrivalEl.innerText.trim() : '';
+    
+    if (!arrivalText) {
+        alert('There is no arrival message to share yet.');
+        return;
+    }
+    
+    window.location.href = `viber://forward?text=${encodeURIComponent(arrivalText)}`;
 });
 
 // Updated flash function to handle multiple button IDs dynamically
