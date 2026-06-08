@@ -230,7 +230,7 @@ Estimated Fuel Consumed: ${fuelConsumed} L`;
         ? `\nDIVERS LIST\n${selectedDivers.map(n => `- ${n}`).join('\n')}\n` 
         : '';
 
-    // Construct preview layout clean of unused labels
+    // Construct Departure Preview layout
     document.getElementById('messagePreview').value =
 `${boatName} Departure from ${departure} to ${destination}
 Departure Time: ${departureTime}
@@ -238,6 +238,15 @@ ${arrivalTimeBlock}
 CREW LIST
 ${crewText}
 ${diversBlock}${metricsBlock}`;
+
+    // Get current time formatted as HH:MM for actual arrival update tracking
+    const now = new Date();
+    const currentActualTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+    // Construct Arrival Preview layout
+    document.getElementById('arrivalMessagePreview').value =
+`${boatName} has arrived safely at ${destination}.
+Arrival Time: ${currentActualTime}`;
 }
 
 // ── Copy Button ───────────────────────────────────────────────────────────────
