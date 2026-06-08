@@ -1,0 +1,21 @@
+{
+  "boats": [
+    "Sea Dragon",
+    "Dive Master"
+  ],
+  "locations": [
+    "Malé",
+    "Hulhumalé",
+    "Maafushi",
+    "Aarah"
+  ],
+  "crew": [
+    "Ali Shah",
+    "Ahmed Ibrahim",
+    "Maain Mahir"
+  ],
+  "divers": [
+    "John Doe",
+    "Sarah Jenkins"
+  ]
+}

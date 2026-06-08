@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Trip Message Generator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="app-container">
+        <h2>Trip Message Generator</h2>
+
+        <!-- Boat Selection -->
+        <div class="form-group">
+            <label for="boatName">Boat Name</label>
+            <div class="input-with-btn">
+                <select id="boatName"></select>
+                <button type="button" class="add-btn" onclick="addNewItem('boatName', 'Boats')" title="Add Boat">+</button>
+            </div>
+        </div>
+
+        <!-- Route Selection -->
+        <div class="form-row">
+            <div class="form-group">
+                <label for="departureFrom">Departure From</label>
+                <div class="input-with-btn">
+                    <select id="departureFrom"></select>
+                    <button type="button" class="add-btn" onclick="addNewItem('departureFrom', 'Locations')" title="Add Location">+</button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="destinationTo">Destination To</label>
+                <div class="input-with-btn">
+                    <select id="destinationTo"></select>
+                    <button type="button" class="add-btn" onclick="addNewItem('destinationTo', 'Locations')" title="Add Location">+</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Departure Time -->
+        <div class="form-group">
+            <label for="departureTime">Time of Departure</label>
+            <input type="time" id="departureTime">
+        </div>
+
+        <!-- Crew List -->
+        <div class="form-group">
+            <div class="section-header">
+                <label>Crew List</label>
+                <button type="button" class="add-btn-small" onclick="addNewCheckboxItem('crewContainer', 'Crew')">+ Add Crew</button>
+            </div>
+            <div id="crewContainer" class="checkbox-grid"></div>
+        </div>
+
+        <!-- Divers List -->
+        <div class="form-group">
+            <div class="section-header">
+                <label>Divers List</label>
+                <button type="button" class="add-btn-small" onclick="addNewCheckboxItem('diversContainer', 'Divers')">+ Add Diver</button>
+            </div>
+            <div id="diversContainer" class="checkbox-grid"></div>
+        </div>
+
+        <!-- Distance & Fuel -->
+        <div class="form-row">
+            <div class="form-group">
+                <label for="distance">Distance (nm)</label>
+                <input type="number" id="distance" placeholder="0" step="0.1">
+            </div>
+            <div class="form-group">
+                <label for="fuelBurn">Burn Rate (L/nm)</label>
+                <input type="number" id="fuelBurn" value="2.5" step="0.1">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Calculated Fuel Used: <span id="fuelCalculated">0</span> L</label>
+        </div>
+
+        <hr>
+
+        <!-- Message Preview -->
+        <div class="form-group">
+            <label>Message Preview</label>
+            <textarea id="messagePreview" readonly rows="10"></textarea>
+        </div>
+
+        <!-- Copy Button -->
+        <button id="copyBtn" class="primary-btn">Copy Message</button>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
