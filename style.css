@@ -378,3 +378,49 @@ textarea:focus {
     margin: 4px 0 0 0;        /* 4px gap exactly between the main title and subheading */
     white-space: nowrap;      /* Keeps the subheading cleanly on a single line */
 }
+
+/* Keeps both buttons on the same line */
+.message-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px; /* Spacing between the copy text and the icon button */
+    width: 100%;
+}
+
+/* Forces the Copy button to scale nicely alongside the new square icon */
+.message-actions .primary-btn {
+    flex: 1; 
+    margin: 0; /* Clears any default margins that might misalign it */
+}
+
+/* The Square Viber Button */
+.viber-square-button {
+    height: 42px; /* Set this to match the exact height of your .primary-btn */
+    width: 42px;  /* Keep height and width identical for a perfect square */
+    aspect-ratio: 1 / 1;
+    background-color: #7360F2; /* Viber purple */
+    color: #ffffff;
+    border: none;
+    border-radius: 6px; /* Adjust radius to match your primary button's curves */
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.viber-square-button:hover {
+    background-color: #5e4cc4;
+}
+
+.viber-square-button:active {
+    transform: scale(0.96);
+}
+
+/* Sizes the inner icon correctly */
+.viber-icon {
+    width: 22px;
+    height: 22px;
+    display: block;
+}
