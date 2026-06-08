@@ -12,10 +12,12 @@ document.addEventListener("DOMContentLoaded", () => {
     initDatabase();
 
     const now = new Date();
-    document.getElementById('departureTime').value =
-        `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+    const timeString = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+    
+    // Pre-fill both inputs on page load
+    document.getElementById('departureTime').value = timeString;
+    document.getElementById('arrivalTime').value = timeString;
 
-    // Added 'arrivalTime' to the listening triggers
     ['boatName','departureFrom','destinationTo','departureTime','arrivalTime','distance','speed','fuelBurnPerHour']
         .forEach(id => {
             const el = document.getElementById(id);
@@ -178,7 +180,7 @@ async function addNewCheckboxItem(containerId, typeLabel) {
 }
 
 // ── Message Generator ─────────────────────────────────────────────────────────
-function generateMessage(event) {
+function generateMessage() {
     const boatName         = document.getElementById('boatName').value         || '[Boat Name]';
     const departure        = document.getElementById('departureFrom').value    || '[]';
     const destination      = document.getElementById('destinationTo').value    || '[]';
@@ -188,14 +190,15 @@ function generateMessage(event) {
     const fuelBurnPerHour  = parseFloat(document.getElementById('fuelBurnPerHour').value) || 0;
 
     let fuelConsumed = (0).toFixed(1);
+    let arrivalTimeBlock = ''; 
     let metricsBlock = '';
 
-    // Only auto-calculate ETA if the change wasn't manually typed into the arrival field itself
+    // Calculate Estimated Arrival Time purely for the Departure Message
     if (distanceVal > 0 && speedVal > 0) {
         const hoursNeeded = distanceVal / speedVal;
         fuelConsumed = (hoursNeeded * fuelBurnPerHour).toFixed(1);
 
-        if (departureTime && event?.target?.id !== 'arrivalTime') {
+        if (departureTime) {
             const [depHours, depMinutes] = departureTime.split(':').map(Number);
             const totalMinutesNeeded = Math.round(hoursNeeded * 60);
 
@@ -206,8 +209,8 @@ function generateMessage(event) {
             const arrHours = String(arrivalDate.getHours()).padStart(2, '0');
             const arrMinutes = String(arrivalDate.getMinutes()).padStart(2, '0');
             
-            // Populate the interactive input field directly
-            document.getElementById('arrivalTime').value = `${arrHours}:${arrMinutes}`;
+            // This goes only to the departure message text template
+            arrivalTimeBlock = `Estimated Arrival Time: ${arrHours}:${arrMinutes}\n`;
         }
 
         metricsBlock = `\nDistance: ${distanceVal} nm
@@ -215,9 +218,8 @@ Speed: ${speedVal} knots
 Estimated Fuel Consumed: ${fuelConsumed} L`;
     }
 
-    // Read the final active arrival time value (whether auto-calculated or manually changed)
-    const arrivalTimeVal = document.getElementById('arrivalTime').value;
-    const arrivalTimeBlock = arrivalTimeVal ? `Estimated Arrival Time: ${arrivalTimeVal}\n` : '';
+    // Read the separate Arrival Input field value for the Arrival Message
+    const actualArrivalTimeVal = document.getElementById('arrivalTime').value;
     
     document.getElementById('fuelCalculated').textContent = fuelConsumed;
 
@@ -230,7 +232,7 @@ Estimated Fuel Consumed: ${fuelConsumed} L`;
         ? `\nDIVERS LIST\n${selectedDivers.map(n => `- ${n}`).join('\n')}\n` 
         : '';
 
-    // 1. Construct Departure Preview layout
+    // 1. Departure Message: Always uses the mathematically calculated auto-time
     document.getElementById('messagePreview').value =
 `${boatName} Departure from ${departure} to ${destination}
 Departure Time: ${departureTime}
@@ -239,10 +241,10 @@ CREW LIST
 ${crewText}
 ${diversBlock}${metricsBlock}`;
 
-    // 2. Construct Arrival Preview layout using the editable value
+    // 2. Arrival Message: Uses the isolated input field from the bottom of the form
     document.getElementById('arrivalMessagePreview').value =
-`${boatName} arrived to ${destination}.
-Arrival Time: ${arrivalTimeVal || '--:--'}`;
+`${boatName} has arrived safely at ${destination}.
+Arrival Time: ${actualArrivalTimeVal || '--:--'}`;
 }
 
 // ── Copy Button (Departure) ──────────────────────────────────────────────────
