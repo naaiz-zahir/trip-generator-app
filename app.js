@@ -187,15 +187,16 @@ function generateMessage() {
     const speedVal         = parseFloat(document.getElementById('speed').value)         || 0;
     const fuelBurnPerHour  = parseFloat(document.getElementById('fuelBurnPerHour').value) || 0;
 
-    // 1. Time-based Fuel Calculation Algorithm
     let fuelConsumed = (0).toFixed(1);
-    let arrivalTimeText = '--:--';
+    let arrivalTimeBlock = ''; // Changed from a fallback string to an empty conditional block
+    let metricsBlock = '';     // New empty conditional block for distance, speed, and fuel
 
+    // Only calculate and display performance info if inputs are provided
     if (distanceVal > 0 && speedVal > 0) {
         const hoursNeeded = distanceVal / speedVal;
         fuelConsumed = (hoursNeeded * fuelBurnPerHour).toFixed(1);
 
-        // 2. ETA Calculation String parsing
+        // Calculate ETA block string conditionally
         if (departureTime) {
             const [depHours, depMinutes] = departureTime.split(':').map(Number);
             const totalMinutesNeeded = Math.round(hoursNeeded * 60);
@@ -206,10 +207,18 @@ function generateMessage() {
 
             const arrHours = String(arrivalDate.getHours()).padStart(2, '0');
             const arrMinutes = String(arrivalDate.getMinutes()).padStart(2, '0');
-            arrivalTimeText = `${arrHours}:${arrMinutes}`;
+            
+            // Format the row precisely
+            arrivalTimeBlock = `Estimated Arrival Time: ${arrHours}:${arrMinutes}\n`;
         }
+
+        // Format the performance summary block string dynamically
+        metricsBlock = `\nDistance: ${distanceVal} nm
+Speed: ${speedVal} knots
+Estimated Fuel Consumed: ${fuelConsumed} L`;
     }
     
+    // Fallback UI display indicator logic
     document.getElementById('fuelCalculated').textContent = fuelConsumed;
 
     const selectedCrew   = Array.from(document.querySelectorAll('input[name="crew"]:checked')).map(el => el.value);
@@ -221,17 +230,14 @@ function generateMessage() {
         ? `\nDIVERS LIST\n${selectedDivers.map(n => `- ${n}`).join('\n')}\n` 
         : '';
 
+    // Construct preview layout clean of unused labels
     document.getElementById('messagePreview').value =
 `${boatName} Departure from ${departure} to ${destination}
 Departure Time: ${departureTime}
-Estimated Arrival Time: ${arrivalTimeText}
-
+${arrivalTimeBlock}
 CREW LIST
 ${crewText}
-${diversBlock}
-Distance: ${distanceVal} nm
-Speed: ${speedVal} knots
-Estimated Fuel Consumed: ${fuelConsumed} L`;
+${diversBlock}${metricsBlock}`;
 }
 
 // ── Copy Button ───────────────────────────────────────────────────────────────
