@@ -343,16 +343,19 @@ textarea:focus {
 
 .header-container {
     display: flex;
-    align-items: center;  /* Vertically centers logo and text */
-    gap: 12px;            /* Spacing between the logo and the heading */
-    margin-bottom: 20px;  /* Optional: keeps space below the header */
+    align-items: center;  /* Perfectly centers them horizontally on the same line */
+    gap: 0.6rem;          /* Proportional spacing between logo and text */
+    margin-bottom: 20px;
 }
 
 .header-logo {
-    height: 1.8rem;       /* Automatically matches the approximate height of your h2 text */
-    width: auto;          /* Maintains the logo's original proportions */
+    height: 2rem;         /* Forces the logo to match the visual scale of the H2 */
+    width: auto;          /* Keeps the SVG aspect ratio intact */
+    display: block;       /* Removes any default inline text spacing below the image */
 }
 
 .header-container h2 {
-    margin: 0;            /* Removes default margins that might throw off alignment */
+    font-size: 2rem;      /* Explicitly defines the text size to match the logo */
+    line-height: 1;       /* Tightens the text box to prevent invisible padding */
+    margin: 0;            /* Removes default browser margins */
 }
