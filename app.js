@@ -227,7 +227,7 @@ Estimated Fuel Consumed: ${fuelConsumed} L`;
     const selectedDivers = Array.from(document.querySelectorAll('input[name="diver"]:checked')).map(el => el.value);
 
     const crewBlock = selectedCrew.length > 0 
-        ? `CREW LIST\n${selectedCrew.map(n => `• ${n}`).join('\n')}\n` 
+        ? `\nCREW LIST\n${selectedCrew.map(n => `• ${n}`).join('\n')}\n` 
         : '';
     
     const diversBlock = selectedDivers.length > 0 
