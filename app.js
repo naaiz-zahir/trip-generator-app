@@ -236,13 +236,13 @@ Estimated Fuel Consumed: ${fuelConsumed} L`;
 
     // 1. Departure Message: Always uses the mathematically calculated auto-time
     document.getElementById('messagePreview').value =
-`${boatName} Departure from ${departure} to ${destination} ${"@"}${departureTime}
-${arrivalTimeBlock}
-${crewBlock}${diversBlock}${metricsBlock}`;
+    `${boatName} Departure from ${departure} to ${destination} ${"@"}${departureTime}
+    ${arrivalTimeBlock}
+    ${crewBlock}${diversBlock}${metricsBlock}`;
 
     // 2. Arrival Message: Uses the isolated input field from the bottom of the form
     document.getElementById('arrivalMessagePreview').value =
-`${boatName} Arrived to ${destination} ${"@"}${actualArrivalTimeVal || '--:--'}`;
+    `${boatName} Arrived to ${destination} ${"@"}${actualArrivalTimeVal || '--:--'}`;
 }
 
 // ── Copy Button (Departure) ──────────────────────────────────────────────────
