@@ -226,7 +226,9 @@ Estimated Fuel Consumed: ${fuelConsumed} L`;
     const selectedCrew   = Array.from(document.querySelectorAll('input[name="crew"]:checked')).map(el => el.value);
     const selectedDivers = Array.from(document.querySelectorAll('input[name="diver"]:checked')).map(el => el.value);
 
-    const crewText   = selectedCrew.length   > 0 ? selectedCrew.map(n   => `• ${n}`).join('\n') : '[Crew members]';
+    const crewBlock = selectedCrew.length > 0 
+        ? `CREW LIST\n${selectedCrew.map(n => `• ${n}`).join('\n')}\n` 
+        : '';
     
     const diversBlock = selectedDivers.length > 0 
         ? `\nDIVERS LIST\n${selectedDivers.map(n => `• ${n}`).join('\n')}\n` 
@@ -236,9 +238,7 @@ Estimated Fuel Consumed: ${fuelConsumed} L`;
     document.getElementById('messagePreview').value =
 `${boatName} Departure from ${departure} to ${destination} ${"@"}${departureTime}
 ${arrivalTimeBlock}
-CREW LIST
-${crewText}
-${diversBlock}${metricsBlock}`;
+${crewBlock}${diversBlock}${metricsBlock}`;
 
     // 2. Arrival Message: Uses the isolated input field from the bottom of the form
     document.getElementById('arrivalMessagePreview').value =
