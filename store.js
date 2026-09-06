@@ -115,6 +115,8 @@ const Store = {
     shared: { boats: [], locations: [], crew: [], divers: [] },
     source: 'none',       // 'firebase' | 'published' | 'cache'
     onChange: null,       // set by the UI to react to a live update
+    onFailure: null,      // set by the UI to report a failed live connection
+    lastError: null,      // why the live connection failed, for the UI to show
 
     get live() { return this.source === 'firebase'; },
 
@@ -140,8 +142,15 @@ const Store = {
         })();
 
         live
-            .then(data => { if (this.onChange) this.onChange(data); })
-            .catch(err => console.warn('Firebase unavailable, staying on the committed list:', err));
+            .then(data => { this.lastError = null; if (this.onChange) this.onChange(data); })
+            .catch(err => {
+                // Read-only is a symptom with several causes. Keep the reason
+                // so the UI can name it instead of leaving people guessing
+                // between a code problem and a console setting.
+                this.lastError = err;
+                console.warn('Firebase unavailable, staying on the committed list:', err);
+                if (this.onFailure) this.onFailure(err);
+            });
 
         const quick = await this.loadFallback().catch(() => null);
         if (quick) return quick;
@@ -205,6 +214,7 @@ const Store = {
                     } catch (err) {
                         // Never fall through to publishing the empty snapshot:
                         // let the timeout below drop us to the committed list.
+                        this.lastError = err;
                         console.warn('Could not seed the database:', err);
                         return;
                     }
@@ -300,6 +310,28 @@ const Store = {
         return { shared: false };
     }
 };
+
+// Maps a Firebase failure onto the thing that actually needs changing.
+function explainFirebaseError(err) {
+    const text = `${(err && err.code) || ''} ${(err && err.message) || err || ''}`.toLowerCase();
+
+    if (text.includes('permission_denied') || text.includes('permission-denied')) {
+        return 'Database rules are rejecting the app — check the Rules tab in the Firebase console.';
+    }
+    if (text.includes('operation-not-allowed') || text.includes('admin-restricted')) {
+        return 'Anonymous sign-in is switched off — enable it under Authentication in the Firebase console.';
+    }
+    if (text.includes('api-key') || text.includes('invalid-api-key')) {
+        return 'The API key in firebase-config.js is not valid for this project.';
+    }
+    if (text.includes('could not load') || text.includes('network')) {
+        return 'Could not reach Firebase — check the connection.';
+    }
+    if (text.includes('did not return a usable list')) {
+        return 'Firebase connected but returned nothing usable — most often the rules are blocking reads or seeding.';
+    }
+    return (err && err.message) || 'Firebase could not be reached.';
+}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 

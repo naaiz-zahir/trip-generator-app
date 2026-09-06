@@ -28,6 +28,12 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 });
 
+// Read-only is easy to mistake for "working". Say why it happened, once.
+function onSharedListFailed(err) {
+    updateSyncBadge();
+    showToast(`\u26a0\ufe0f ${explainFirebaseError(err)}`, 'error');
+}
+
 // Called whenever the shared list changes under us. Ticked crew and the chosen
 // boat are preserved by refreshUI, so this is safe to happen mid-message.
 function onSharedListChanged(data) {
@@ -42,6 +48,7 @@ function onSharedListChanged(data) {
 async function initDatabase() {
     try {
         Store.onChange = onSharedListChanged;
+        Store.onFailure = onSharedListFailed;
         const data = await Store.load();
         applyData(data);
         refreshUI();
@@ -344,8 +351,10 @@ function updateSyncBadge() {
     } else {
         badge.textContent = '\u25cf Read only';
         badge.className = 'sync-badge sync-read';
-        badge.title = 'Showing the list committed in the repository. ' +
-                      'Firebase is not reachable, so additions stay on this device.';
+        badge.title = Store.lastError
+            ? explainFirebaseError(Store.lastError)
+            : 'Showing the list committed in the repository. ' +
+              'Firebase is not reachable, so additions stay on this device.';
     }
 }
 
