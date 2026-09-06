@@ -121,6 +121,7 @@ label {
 input[type="text"],
 input[type="number"],
 input[type="time"],
+input[type="password"],
 select {
     width: 100%;
     height: 46px;
@@ -145,6 +146,7 @@ select option {
 input[type="text"]:focus,
 input[type="number"]:focus,
 input[type="time"]:focus,
+input[type="password"]:focus,
 select:focus {
     border-color: var(--teal-glow);
     box-shadow: 0 0 0 3px rgba(0, 194, 203, 0.12);
@@ -485,3 +487,182 @@ header h1, .header-title {
     margin: 0;
     text-align: center;
 }
+
+/* ── Sync badge & settings entry point ─── */
+.header-meta {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+}
+
+.sync-badge {
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+}
+
+.sync-on {
+    color: var(--teal-light);
+    background: rgba(0, 194, 203, 0.12);
+    border-color: rgba(0, 194, 203, 0.45);
+}
+
+.sync-off {
+    color: var(--text-muted);
+    background: var(--input-bg);
+}
+
+.settings-btn {
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+    color: var(--text-muted);
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 4px 12px;
+    cursor: pointer;
+    transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.settings-btn:hover {
+    color: var(--teal-light);
+    border-color: rgba(0, 194, 203, 0.5);
+}
+
+/* ── Settings modal ─────────────────────── */
+.modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    background: rgba(4, 10, 20, 0.75);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    padding: 20px 15px;
+    overflow-y: auto;
+}
+
+.modal.is-open {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+}
+
+.modal-card {
+    width: 100%;
+    max-width: 480px;
+    background: var(--ocean-mid);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+    animation: fadeUp 0.25s ease forwards;
+}
+
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 18px 22px;
+    border-bottom: 1px solid var(--border);
+}
+
+.modal-header h2 {
+    text-align: left;
+    font-size: 1.15rem;
+    margin: 0;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.6rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 4px;
+}
+
+.modal-close:hover { color: var(--teal-light); }
+
+.modal-body { padding: 20px 22px 24px; }
+
+.modal-note {
+    font-size: 0.82rem;
+    line-height: 1.55;
+    color: var(--text-muted);
+    margin-bottom: 18px;
+}
+
+.modal-note code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.78rem;
+    color: var(--teal-light);
+}
+
+.field-hint {
+    display: block;
+    margin-top: 6px;
+    font-size: 0.72rem;
+    line-height: 1.5;
+    color: var(--text-muted);
+}
+
+.modal-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 14px 0 4px;
+}
+
+.modal-actions .primary-btn { flex: 1 1 140px; }
+
+.secondary-btn {
+    flex: 0 1 auto;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 11px 16px;
+    cursor: pointer;
+    transition: border-color 0.2s ease, color 0.2s ease;
+}
+
+.secondary-btn:hover {
+    color: var(--teal-light);
+    border-color: rgba(0, 194, 203, 0.5);
+}
+
+.file-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#dataEditor {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.78rem;
+    line-height: 1.5;
+    white-space: pre;
+}
+
+.settings-status {
+    margin-top: 14px;
+    font-size: 0.78rem;
+    line-height: 1.5;
+    min-height: 1em;
+    color: var(--text-muted);
+}
+
+.settings-status-ok    { color: var(--teal-light); }
+.settings-status-error { color: #ff8a8a; }
