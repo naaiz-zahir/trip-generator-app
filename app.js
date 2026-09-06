@@ -1,6 +1,3 @@
-// ── Config ───────────────────────────────────────────────────────────────────
-const BACKEND_URL = 'https://trip-generator-production.up.railway.app';
-
 // ── State ─────────────────────────────────────────────────────────────────────
 let boats     = [];
 let locations = [];
@@ -13,7 +10,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const now = new Date();
     const timeString = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-    
+
     // Pre-fill both inputs on page load
     document.getElementById('departureTime').value = timeString;
     document.getElementById('arrivalTime').value = timeString;
@@ -25,25 +22,26 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 });
 
-// Loads the database from the Railway backend
+// Loads the database: GitHub sync if configured, otherwise the local copy.
 async function initDatabase() {
     try {
-        const res  = await fetch(`${BACKEND_URL}/api/database`);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-
-        // Extract and sort each list in ascending alphabetical order (.sort())
-        boats     = [...(data.boats     || [])].sort();
-        locations = [...(data.locations || [])].sort(); // Optional: sorts locations too!
-        crew      = [...(data.crew      || [])].sort();
-        divers    = [...(data.divers    || [])].sort();
-
+        const data = await Store.load();
+        applyData(data);
         refreshUI();
         generateMessage();
+        updateSyncBadge();
     } catch (err) {
         console.error("Could not load database:", err);
-        showToast("⚠️ Could not connect to backend", 'error');
+        showToast(`\u26a0\ufe0f ${err.message}`, 'error');
     }
+}
+
+// Mirrors the store into the module-level lists the UI reads from.
+function applyData(data) {
+    boats     = data.boats;
+    locations = data.locations;
+    crew      = data.crew;
+    divers    = data.divers;
 }
 
 // ── UI Helpers ────────────────────────────────────────────────────────────────
@@ -103,17 +101,12 @@ function populateCheckboxes(containerId, items, nameAttr) {
 }
 
 // ── Add Items ─────────────────────────────────────────────────────────────────
-async function saveToBackend(category, value) {
-    const res = await fetch(`${BACKEND_URL}/api/add`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ category, value })
-    });
-    if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Server error');
-    }
-    return res.json();
+// Reports where a saved change actually landed, so the user is never misled
+// into thinking a device-local edit reached the rest of the squadron.
+function reportSaved(label, result) {
+    if (result.synced) showToast(`\u2705 "${label}" saved to GitHub`);
+    else showToast(`\u2705 "${label}" saved on this device only`);
+    updateSyncBadge();
 }
 
 async function addNewItem(elementId, typeLabel) {
@@ -123,22 +116,19 @@ async function addNewItem(elementId, typeLabel) {
 
     const categoryMap = { 'Boats': 'boats', 'Locations': 'locations' };
     try {
-        await saveToBackend(categoryMap[typeLabel], trimmed);
+        const result = await Store.add(categoryMap[typeLabel], trimmed);
+        applyData(Store.data);
         if (typeLabel === 'Boats') {
-            boats.push(trimmed);
-            boats.sort(); // <-- Add this to sort boats after adding
             populateDropdown('boatName', boats);
             document.getElementById('boatName').value = trimmed;
         } else {
-            locations.push(trimmed);
-            locations.sort(); // <-- Add this to sort locations after adding
             populateDropdown('departureFrom', locations);
             populateDropdown('destinationTo', locations);
         }
-        showToast(`✅ "${trimmed}" saved`);
+        reportSaved(trimmed, result);
         generateMessage();
     } catch (err) {
-        showToast(`⚠️ ${err.message}`, 'error');
+        showToast(`\u26a0\ufe0f ${err.message}`, 'error');
     }
 }
 
@@ -153,7 +143,7 @@ async function addNewCheckboxItem(containerId, typeLabel) {
         const phoneNumber = prompt("Enter phone number (e.g., 9486171):");
         if (!phoneNumber || phoneNumber.trim() === "") return;
 
-        trimmed = `${crewDetails.trim()} — ${phoneNumber.trim()}`;
+        trimmed = `${crewDetails.trim()} \u2014 ${phoneNumber.trim()}`;
     } else {
         const newItem = prompt(`Enter new ${typeLabel.toLowerCase()} name:`);
         if (!newItem || newItem.trim() === "") return;
@@ -162,20 +152,17 @@ async function addNewCheckboxItem(containerId, typeLabel) {
 
     const categoryMap = { 'Crew': 'crew', 'Divers': 'divers' };
     try {
-        await saveToBackend(categoryMap[typeLabel], trimmed);
+        const result = await Store.add(categoryMap[typeLabel], trimmed);
+        applyData(Store.data);
         if (typeLabel === 'Crew') {
-            crew.push(trimmed);
-            crew.sort(); // <-- Add this to sort crew after adding
             populateCheckboxes('crewContainer', crew, 'crew');
         } else {
-            divers.push(trimmed);
-            divers.sort(); // <-- Add this to sort divers after adding
             populateCheckboxes('diversContainer', divers, 'diver');
         }
-        showToast(`✅ "${trimmed}" saved`);
+        reportSaved(trimmed, result);
         generateMessage();
     } catch (err) {
-        showToast(`⚠️ ${err.message}`, 'error');
+        showToast(`\u26a0\ufe0f ${err.message}`, 'error');
     }
 }
 
