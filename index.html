@@ -18,7 +18,7 @@
         <p class="header-subtitle">Harbour Craft Message Generator</p>
         <div class="header-meta">
             <span id="syncBadge" class="sync-badge sync-off">○ This device only</span>
-            <button type="button" id="settingsBtn" class="settings-btn" title="Data &amp; sync settings">⚙ Data</button>
+            <button type="button" id="settingsBtn" class="settings-btn" title="Data">⚙ Data</button>
         </div>
     </header>
     
@@ -128,54 +128,28 @@
     <div id="settingsModal" class="modal">
         <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
             <div class="modal-header">
-                <h2 id="settingsTitle">Data &amp; Sync</h2>
+                <h2 id="settingsTitle">Data</h2>
                 <button type="button" id="settingsClose" class="modal-close" aria-label="Close">&times;</button>
             </div>
 
             <div class="modal-body">
                 <p class="modal-note">
-                    Changes are always saved in this browser. To share them with everyone
-                    else, connect a GitHub token so the app can commit
-                    <code>database.json</code> back to the repository.
+                    You do not need this to add people &mdash; the <strong>+</strong> buttons on the
+                    main screen already add for everyone. This is here for checking the
+                    connection, fixing an entry, and taking a backup.
                 </p>
 
-                <div class="form-group">
-                    <label for="syncRepo">Repository (owner/repo)</label>
-                    <input type="text" id="syncRepo" placeholder="naaiz-zahir/trip-generator-app" autocomplete="off">
-                </div>
+                <p id="connectionState" class="connection-state"></p>
 
                 <div class="form-group">
-                    <label for="syncBranch">Branch</label>
-                    <input type="text" id="syncBranch" value="main" autocomplete="off">
-                </div>
-
-                <div class="form-group">
-                    <label for="syncToken">GitHub token</label>
-                    <input type="password" id="syncToken" placeholder="github_pat_…" autocomplete="off">
-                    <small class="field-hint">
-                        Use a fine-grained personal access token limited to this one repository,
-                        with <strong>Contents: Read and write</strong>. It is stored in this
-                        browser only — anyone who can use this device can read it, so do not
-                        set it up on a shared or public machine.
-                    </small>
-                </div>
-
-                <div class="modal-actions">
-                    <button type="button" id="syncSaveBtn" class="primary-btn">Connect</button>
-                    <button type="button" id="syncPullBtn" class="secondary-btn">Reload data</button>
-                    <button type="button" id="syncDisableBtn" class="secondary-btn">Disconnect</button>
-                </div>
-
-                <hr>
-
-                <div class="form-group">
-                    <label for="dataEditor">Edit database</label>
+                    <label for="dataEditor">Edit lists</label>
                     <textarea id="dataEditor" rows="12" spellcheck="false"></textarea>
-                    <small class="field-hint">Add, rename or delete entries directly, then save.</small>
+                    <small class="field-hint">Correct a spelling or remove someone, then save.</small>
                 </div>
 
                 <div class="modal-actions">
                     <button type="button" id="dataSaveBtn" class="primary-btn">Save data</button>
+                    <button type="button" id="dataReloadBtn" class="secondary-btn">Reload</button>
                     <button type="button" id="dataExportBtn" class="secondary-btn">Export</button>
                     <label class="secondary-btn file-btn">
                         Import
@@ -188,6 +162,10 @@
         </div>
     </div>
 
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+    <script src="firebase-config.js"></script>
     <script src="store.js"></script>
     <script src="app.js"></script>
     <script src="settings.js"></script>

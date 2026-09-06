@@ -680,3 +680,24 @@ header h1, .header-title {
 .settings-status-error { color: #ff8a8a; }
 
 .settings-status-warn { color: #ffc46b; }
+
+.connection-state {
+    font-size: 0.8rem;
+    line-height: 1.55;
+    padding: 10px 12px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    margin-bottom: 18px;
+}
+
+.connection-ok {
+    color: var(--teal-light);
+    background: rgba(0, 194, 203, 0.1);
+    border-color: rgba(0, 194, 203, 0.4);
+}
+
+.connection-warn {
+    color: #ffc46b;
+    background: rgba(255, 176, 64, 0.1);
+    border-color: rgba(255, 176, 64, 0.4);
+}

@@ -1,90 +1,128 @@
 // ── Data store ────────────────────────────────────────────────────────────────
-// Runs entirely on GitHub Pages. No backend, no third-party service.
+// The shared lists live in a Firebase Realtime Database. Everyone reads and
+// writes them without any per-person setup: the Firebase web config is public
+// by design, and what constrains access is the security rules on the database
+// (see README). Additions push to every other open device within a second.
 //
-// Reading is the same for everyone and needs no setup: the app always starts
-// from the published database.json, so a name committed by one person shows up
-// for everybody else on their next load or refresh.
-//
-// Writing is what differs. With a GitHub token configured, an addition is
-// committed to database.json and becomes everyone's. Without one, it is kept
-// as a "local extra" — layered on top of the published list on this device so
-// the person can use it immediately, but invisible to everyone else until
-// somebody with a token commits it.
+// If Firebase is not configured yet, or is unreachable, the app falls back to
+// the copy of database.json committed in this repository. That keeps it usable
+// read-only, with additions held on the device until Firebase comes back.
 
 const STORE_KEYS = {
     data:   'hcmg.database',
     extras: 'hcmg.localExtras',
-    sync:   'hcmg.sync',
     stamp:  'hcmg.database.savedAt'
 };
 
 const CATEGORIES = ['boats', 'locations', 'crew', 'divers'];
 
+// ── Firebase backend ──────────────────────────────────────────────────────────
+const FirebaseBackend = {
+    db: null,
+    ready: false,
+
+    // Treated as unconfigured until a databaseURL is filled in.
+    get configured() {
+        return typeof FIREBASE_CONFIG === 'object'
+            && !!FIREBASE_CONFIG.databaseURL
+            && !!FIREBASE_CONFIG.apiKey;
+    },
+
+    get available() {
+        return this.configured && typeof firebase !== 'undefined';
+    },
+
+    // Signs in anonymously so the rules can require auth without asking anyone
+    // to log in. The account is per-device and carries no personal data.
+    async connect() {
+        if (this.ready) return;
+        if (!this.available) throw new Error('Firebase is not configured');
+
+        firebase.initializeApp(FIREBASE_CONFIG);
+        await firebase.auth().signInAnonymously();
+        this.db = firebase.database();
+        this.ready = true;
+    },
+
+    // Calls back with the full list on connect and on every later change.
+    subscribe(handler, onError) {
+        this.db.ref('lists').on('value',
+            snap => handler(fromSnapshot(snap.val())),
+            err  => onError && onError(err));
+    },
+
+    // Entries are stored as { pushKey: "value" } rather than as arrays, so two
+    // people adding at the same moment cannot overwrite each other.
+    async add(category, value) {
+        await this.db.ref(`lists/${category}`).push(value);
+    },
+
+    async remove(category, value) {
+        const snap = await this.db.ref(`lists/${category}`).once('value');
+        const updates = {};
+        snap.forEach(child => {
+            if (child.val() === value) updates[child.key] = null;
+        });
+        if (Object.keys(updates).length) await this.db.ref(`lists/${category}`).update(updates);
+    },
+
+    // First run only: copy database.json into the database. Guarded by a
+    // transaction so that several people opening the app at once cannot each
+    // seed it and produce duplicates.
+    async seedIfEmpty(seed) {
+        const claim = await this.db.ref('meta/seeded').transaction(
+            current => (current ? undefined : { at: Date.now() })
+        );
+        if (!claim.committed) return false;
+
+        const payload = {};
+        CATEGORIES.forEach(key => {
+            payload[key] = {};
+            seed[key].forEach(value => {
+                payload[key][this.db.ref().push().key] = value;
+            });
+        });
+        await this.db.ref('lists').set(payload);
+        return true;
+    }
+};
+
+// ── Store ─────────────────────────────────────────────────────────────────────
 const Store = {
-    data:   { boats: [], locations: [], crew: [], divers: [] },  // what the UI shows
-    remote: { boats: [], locations: [], crew: [], divers: [] },  // what everyone shares
-    sha: null,          // blob sha of database.json, needed to write it back
-    source: 'none',     // 'github' | 'published' | 'cache'
-    lastLoadedAt: null,
+    data:   { boats: [], locations: [], crew: [], divers: [] },
+    shared: { boats: [], locations: [], crew: [], divers: [] },
+    source: 'none',       // 'firebase' | 'published' | 'cache'
+    onChange: null,       // set by the UI to react to a live update
 
-    // ── Sync configuration ────────────────────────────────────────────────────
-    getSyncConfig() {
-        try {
-            const raw = localStorage.getItem(STORE_KEYS.sync);
-            return raw ? JSON.parse(raw) : null;
-        } catch { return null; }
-    },
+    get live() { return this.source === 'firebase'; },
 
-    setSyncConfig(cfg) {
-        if (cfg) localStorage.setItem(STORE_KEYS.sync, JSON.stringify(cfg));
-        else localStorage.removeItem(STORE_KEYS.sync);
-    },
-
-    get syncEnabled() {
-        const cfg = this.getSyncConfig();
-        return !!(cfg && cfg.token && cfg.repo);
-    },
-
-    // Entries this device added that are not in the shared list yet.
+    // Entries added on this device that the shared list does not have.
     get localOnly() {
         const extras = this.readExtras();
         return CATEGORIES.reduce((n, key) => n + extras[key].length, 0);
     },
 
-    // Guess owner/repo from the Pages URL so Settings can pre-fill it.
-    guessRepo() {
-        const host = location.hostname;              // naaiz-zahir.github.io
-        const path = location.pathname.split('/').filter(Boolean);
-        if (host.endsWith('.github.io')) {
-            const owner = host.replace('.github.io', '');
-            const repo  = path.length ? path[0] : `${owner}.github.io`;
-            return `${owner}/${repo}`;
-        }
-        return '';
-    },
-
-    // ── Loading ───────────────────────────────────────────────────────────────
-    // Always tries the shared copy first so the lists stay current for everyone.
-    // The cached copy is a fallback for being offline, never the primary source
-    // — otherwise one local addition would freeze this device on a stale list.
     async load() {
-        try {
-            if (this.syncEnabled) {
-                const remote = await this.fetchFromGitHub();
-                this.remote = normalize(remote.data);
-                this.sha = remote.sha;
-                this.source = 'github';
-            } else {
-                this.remote = await this.fetchPublished();
-                this.source = 'published';
+        if (FirebaseBackend.available) {
+            try {
+                await FirebaseBackend.connect();
+                await this.firstSnapshot();
+                this.source = 'firebase';
+                await this.flushExtras();
+                return this.data;
+            } catch (err) {
+                console.warn('Firebase unavailable, falling back to the committed list:', err);
             }
-            // Local extras ride on top until someone commits them.
-            this.data = mergeData(this.remote, this.readExtras());
-            this.lastLoadedAt = new Date();
+        }
+
+        try {
+            this.shared = await this.fetchPublished();
+            this.source = 'published';
+            this.data = mergeData(this.shared, this.readExtras());
             this.cacheLocally();
             return this.data;
         } catch (err) {
-            console.warn('Could not reach the shared list, using cache:', err);
+            console.warn('Could not read the published list:', err);
         }
 
         const cached = this.readLocalCache();
@@ -96,7 +134,61 @@ const Store = {
         throw new Error('Could not load the crew and diver lists, and nothing is cached yet');
     },
 
-    // The copy GitHub Pages serves. Readable by anyone, no token, no rate limit.
+    // Resolves on the first value from Firebase; later values arrive on their
+    // own and are handed to the UI through onChange.
+    firstSnapshot() {
+        return new Promise((resolve, reject) => {
+            let settled = false;
+            const timer = setTimeout(() => {
+                if (!settled) { settled = true; reject(new Error('Firebase did not respond')); }
+            }, 8000);
+
+            FirebaseBackend.subscribe(async lists => {
+                clearTimeout(timer);
+                const empty = CATEGORIES.every(key => lists[key].length === 0);
+                if (empty && !settled) {
+                    // Nothing there yet — populate it from the committed file.
+                    // Whether this device wins the claim or another one is
+                    // already seeding, the filled-in snapshot arrives on its
+                    // own. Returning here matters: falling through would
+                    // publish the empty list and blank everyone's roster.
+                    try {
+                        const seed = await this.fetchPublished();
+                        await FirebaseBackend.seedIfEmpty(seed);
+                        return;
+                    } catch (err) {
+                        console.warn('Could not seed the database:', err);
+                    }
+                }
+
+                this.shared = lists;
+                this.data = lists;
+                this.cacheLocally();
+
+                if (!settled) { settled = true; resolve(this.data); }
+                else if (this.onChange) this.onChange(this.data);
+            }, err => {
+                clearTimeout(timer);
+                if (!settled) { settled = true; reject(err); }
+            });
+        });
+    },
+
+    // Anything added while offline or before Firebase was set up gets pushed
+    // up the first time a connection is available, then stops being local.
+    async flushExtras() {
+        const extras = this.readExtras();
+        const pending = CATEGORIES.flatMap(key =>
+            extras[key].filter(v => !this.shared[key].includes(v)).map(v => [key, v]));
+        if (!pending.length) { this.writeExtras(normalize({})); return; }
+
+        for (const [category, value] of pending) {
+            try { await FirebaseBackend.add(category, value); }
+            catch (err) { console.warn(`Could not upload "${value}":`, err); return; }
+        }
+        this.writeExtras(normalize({}));
+    },
+
     async fetchPublished() {
         const res = await fetch(`database.json?ts=${Date.now()}`, { cache: 'no-store' });
         if (!res.ok) throw new Error(`Could not read database.json (HTTP ${res.status})`);
@@ -115,7 +207,7 @@ const Store = {
             localStorage.setItem(STORE_KEYS.data, JSON.stringify(this.data));
             localStorage.setItem(STORE_KEYS.stamp, new Date().toISOString());
         } catch (err) {
-            console.warn('Could not cache database locally:', err);
+            console.warn('Could not cache the list locally:', err);
         }
     },
 
@@ -128,8 +220,7 @@ const Store = {
 
     writeExtras(extras) {
         try {
-            const empty = CATEGORIES.every(k => extras[k].length === 0);
-            if (empty) localStorage.removeItem(STORE_KEYS.extras);
+            if (CATEGORIES.every(k => extras[k].length === 0)) localStorage.removeItem(STORE_KEYS.extras);
             else localStorage.setItem(STORE_KEYS.extras, JSON.stringify(extras));
         } catch (err) {
             console.warn('Could not record local additions:', err);
@@ -137,7 +228,8 @@ const Store = {
     },
 
     // ── Mutating ──────────────────────────────────────────────────────────────
-    // Returns { synced } so the caller can say whether the change left this device.
+    // Returns { shared } so the caller can say whether the change reached
+    // everyone or is still sitting on this device.
     async add(category, value) {
         if (!CATEGORIES.includes(category)) throw new Error(`Unknown category "${category}"`);
         const trimmed = String(value).trim();
@@ -146,112 +238,60 @@ const Store = {
             throw new Error(`"${trimmed}" already exists`);
         }
 
-        this.data[category] = [...this.data[category], trimmed].sort(collate);
-        if (!this.syncEnabled) {
-            const extras = this.readExtras();
-            extras[category] = [...new Set([...extras[category], trimmed])].sort(collate);
-            this.writeExtras(extras);
+        if (this.live) {
+            await FirebaseBackend.add(category, trimmed);
+            // The subscription echoes the new value back and refreshes the UI,
+            // but update locally too so the change shows without waiting.
+            this.data[category] = [...this.data[category], trimmed].sort(collate);
+            return { shared: true };
         }
-        return this.persist(`Add ${trimmed} to ${category}`);
+
+        this.data[category] = [...this.data[category], trimmed].sort(collate);
+        const extras = this.readExtras();
+        extras[category] = [...new Set([...extras[category], trimmed])].sort(collate);
+        this.writeExtras(extras);
+        this.cacheLocally();
+        return { shared: false };
     },
 
     async remove(category, value) {
         if (!CATEGORIES.includes(category)) throw new Error(`Unknown category "${category}"`);
         this.data[category] = this.data[category].filter(v => v !== value);
-        if (!this.syncEnabled) {
-            const extras = this.readExtras();
-            extras[category] = extras[category].filter(v => v !== value);
-            this.writeExtras(extras);
+
+        if (this.live) {
+            await FirebaseBackend.remove(category, value);
+            return { shared: true };
         }
-        return this.persist(`Remove ${value} from ${category}`);
-    },
-
-    async replaceAll(next, message = 'Edit database') {
-        this.data = normalize(next);
-        if (!this.syncEnabled) this.writeExtras(subtract(this.data, this.remote));
-        return this.persist(message);
-    },
-
-    // Anything the editor removed that is in the shared list will come back on
-    // the next load, because the shared copy is the base. Let the UI say so.
-    pendingRemovals() {
-        if (this.syncEnabled) return [];
-        return CATEGORIES.flatMap(key =>
-            this.remote[key].filter(v => !this.data[key].includes(v))
-        );
-    },
-
-    async persist(message) {
+        const extras = this.readExtras();
+        extras[category] = extras[category].filter(v => v !== value);
+        this.writeExtras(extras);
         this.cacheLocally();
-        if (!this.syncEnabled) return { synced: false };
-        await this.pushToGitHub(message);
-        return { synced: true };
+        return { shared: false };
     },
 
-    // ── GitHub REST calls ─────────────────────────────────────────────────────
-    apiUrl(cfg) {
-        const branch = cfg.branch || 'main';
-        return `https://api.github.com/repos/${cfg.repo}/contents/${encodeURIComponent(cfg.path || 'database.json')}?ref=${encodeURIComponent(branch)}`;
-    },
-
-    headers(cfg) {
-        return {
-            'Authorization': `Bearer ${cfg.token}`,
-            'Accept': 'application/vnd.github+json',
-            'X-GitHub-Api-Version': '2022-11-28'
-        };
-    },
-
-    async fetchFromGitHub() {
-        const cfg = this.getSyncConfig();
-        const res = await fetch(this.apiUrl(cfg), { headers: this.headers(cfg), cache: 'no-store' });
-        if (!res.ok) throw new Error(await describeError(res));
-        const json = await res.json();
-        return { data: JSON.parse(decodeBase64(json.content)), sha: json.sha };
-    },
-
-    async pushToGitHub(message, isRetry = false) {
-        const cfg = this.getSyncConfig();
-        const branch = cfg.branch || 'main';
-        const body = {
-            message: `${message} [via HCMG]`,
-            content: encodeBase64(JSON.stringify(this.data, null, 2) + '\n'),
-            branch
-        };
-        if (this.sha) body.sha = this.sha;
-
-        const res = await fetch(this.apiUrl(cfg).split('?')[0], {
-            method: 'PUT',
-            headers: { ...this.headers(cfg), 'Content-Type': 'application/json' },
-            body: JSON.stringify(body)
-        });
-
-        // 409/422 means someone else committed since we last read. Merge and retry once.
-        if ((res.status === 409 || res.status === 422) && !isRetry) {
-            const remote = await this.fetchFromGitHub();
-            this.data = mergeData(remote.data, this.data);
-            this.sha = remote.sha;
+    async replaceAll(next) {
+        const wanted = normalize(next);
+        if (!this.live) {
+            this.data = wanted;
+            this.writeExtras(subtract(this.data, this.shared));
             this.cacheLocally();
-            return this.pushToGitHub(message, true);
+            return { shared: false };
         }
 
-        if (!res.ok) throw new Error(await describeError(res));
-        const json = await res.json();
-        this.sha = json.content.sha;
-
-        // Everything is in the shared copy now, so nothing is local-only.
-        this.remote = normalize(this.data);
-        this.writeExtras(normalize({}));
-        return json;
+        const added   = subtract(wanted, this.data);
+        const removed = subtract(this.data, wanted);
+        for (const key of CATEGORIES) {
+            for (const value of added[key])   await FirebaseBackend.add(key, value);
+            for (const value of removed[key]) await FirebaseBackend.remove(key, value);
+        }
+        this.data = wanted;
+        return { shared: true };
     },
 
-    // Verify a token/repo pair before saving it.
-    async testSync(cfg) {
-        const res = await fetch(this.apiUrl(cfg), { headers: this.headers(cfg), cache: 'no-store' });
-        if (!res.ok) throw new Error(await describeError(res));
-        const json = await res.json();
-        JSON.parse(decodeBase64(json.content)); // fail loudly on malformed JSON
-        return true;
+    // Removals that will not stick, because the shared copy is the base.
+    pendingRemovals() {
+        if (this.live) return [];
+        return CATEGORIES.flatMap(key => this.shared[key].filter(v => !this.data[key].includes(v)));
     }
 };
 
@@ -271,7 +311,16 @@ function normalize(raw) {
     return out;
 }
 
-// Union of both sides, so a concurrent edit elsewhere is never dropped.
+// Firebase stores { pushKey: value } maps; flatten them back to sorted lists.
+function fromSnapshot(value) {
+    const raw = {};
+    CATEGORIES.forEach(key => {
+        const node = (value && value[key]) || {};
+        raw[key] = Object.values(node);
+    });
+    return normalize(raw);
+}
+
 function mergeData(base, overlay) {
     const out = {};
     CATEGORIES.forEach(key => {
@@ -288,27 +337,4 @@ function subtract(a, b) {
         out[key] = (a[key] || []).filter(v => !seen.has(v));
     });
     return out;
-}
-
-// btoa/atob are byte-oriented; names carry non-ASCII (Malé, em dashes).
-function encodeBase64(str) {
-    const bytes = new TextEncoder().encode(str);
-    let binary = '';
-    bytes.forEach(b => { binary += String.fromCharCode(b); });
-    return btoa(binary);
-}
-
-function decodeBase64(b64) {
-    const binary = atob(String(b64).replace(/\s/g, ''));
-    const bytes = Uint8Array.from(binary, ch => ch.charCodeAt(0));
-    return new TextDecoder().decode(bytes);
-}
-
-async function describeError(res) {
-    let detail = '';
-    try { detail = (await res.json()).message || ''; } catch { /* no body */ }
-    if (res.status === 401) return 'Token rejected (401) — check it has not expired';
-    if (res.status === 403) return `Access denied (403) — token needs Contents: Read and write${detail ? ` — ${detail}` : ''}`;
-    if (res.status === 404) return 'Not found (404) — check the owner/repo, branch and file path';
-    return `GitHub API error ${res.status}${detail ? `: ${detail}` : ''}`;
 }

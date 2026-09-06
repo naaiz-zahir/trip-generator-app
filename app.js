@@ -21,39 +21,27 @@ document.addEventListener("DOMContentLoaded", () => {
             if (el) el.addEventListener('input', generateMessage);
         });
 
-    // Pick up names other people have added, without a manual reload. Checkbox
-    // ticks and dropdown choices are preserved across a refresh, so this is
-    // safe to run while a message is half filled in.
-    document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') refreshFromShared();
+    // Firebase pushes changes to every open device, so nothing polls here.
+    // The one case worth re-checking is coming back online after a drop.
+    window.addEventListener('online', () => {
+        if (!Store.live) initDatabase();
     });
-    window.addEventListener('online', refreshFromShared);
 });
 
-// Re-reads the shared list quietly. Unlike initDatabase it stays silent on
-// failure — a refresh that cannot reach GitHub should not interrupt someone
-// mid-message when the list already on screen is perfectly usable.
-let lastRefresh = 0;
-async function refreshFromShared() {
-    if (Date.now() - lastRefresh < 30000) return;   // at most every 30s
-    lastRefresh = Date.now();
-    try {
-        const before = JSON.stringify(Store.data);
-        const data = await Store.load();
-        if (JSON.stringify(data) === before) return;
-        applyData(data);
-        refreshUI();
-        generateMessage();
-        updateSyncBadge();
-        showToast('\u{1f504} List updated');
-    } catch (err) {
-        console.warn('Background refresh failed:', err);
-    }
+// Called whenever the shared list changes under us. Ticked crew and the chosen
+// boat are preserved by refreshUI, so this is safe to happen mid-message.
+function onSharedListChanged(data) {
+    applyData(data);
+    refreshUI();
+    generateMessage();
+    updateSyncBadge();
+    showToast('\u{1f504} List updated');
 }
 
-// Loads the database: GitHub sync if configured, otherwise the local copy.
+// Loads the shared lists and keeps them current.
 async function initDatabase() {
     try {
+        Store.onChange = onSharedListChanged;
         const data = await Store.load();
         applyData(data);
         refreshUI();
@@ -133,7 +121,7 @@ function populateCheckboxes(containerId, items, nameAttr) {
 // Reports where a saved change actually landed, so the user is never misled
 // into thinking a device-local edit reached the rest of the squadron.
 function reportSaved(label, result) {
-    if (result.synced) showToast(`\u2705 "${label}" saved to GitHub`);
+    if (result.shared) showToast(`\u2705 "${label}" added for everyone`);
     else showToast(`\u2705 "${label}" saved on this device only`);
     updateSyncBadge();
 }

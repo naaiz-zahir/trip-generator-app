@@ -10,43 +10,78 @@ A streamlined, mobile-friendly web application designed to generate standardized
 - **Hidden Contact Strings:** Stores raw data components containing phone numbers behind the scenes while displaying clean, professional names on the user interface checklists.
 - **Time-Based Fuel Estimation Engine:** Utilizes an algorithm that calculates journey duration based on distance and speed, multiplying it by a maximum hourly fuel burn rate to derive optimal estimations.
 - **Dual Message Copy System:** Generates separate **Departure** and **Arrival** status cards with dedicated clipboard utilities. The arrival log dynamically defaults to the active localized check-in time.
-- **Serverless Data Store:** Runs as a plain static site on GitHub Pages with no backend, no database and no third-party service. Crew, boat, location and diver lists are editable from inside the app and can be committed straight back to this repository.
+- **Live Shared Lists:** Boat, location, crew and diver lists are held in a Firebase Realtime Database and shared by everyone. Anyone can add a person from the app with no login or setup, and the change appears on every other open device within a second. The app falls back to the committed copy of `database.json` when offline.
 
 ---
 
 ## 🗂 How the data is stored
 
-There is no server. `database.json` in this repository is the shared list, and everyone reads from it.
+The shared lists live in a **Firebase Realtime Database**. Nobody needs a login, a token, or any setup: open the app and the current lists are there, and the **+** buttons add people for everyone. A change made on one phone appears on every other open device within a second.
 
-**Reading needs no setup.** Whoever opens the app gets the current lists, and the app re-checks for changes whenever the tab is brought back into view, so a name added by one person appears for the rest without anyone reloading.
+`database.json` in this repository stays as the seed and the offline fallback. If Firebase is unreachable — or not configured yet — the app still runs off that committed copy, and anything added meanwhile is held on the device and uploaded automatically once the connection returns.
 
-**Adding for everyone needs a token.** A static site cannot commit on an anonymous visitor's behalf, so the person adding must supply GitHub credentials of their own:
+The badge under the title says which state the app is in:
 
-| | Sees everyone's entries | Can add for everyone |
-|---|---|---|
-| **No token** | Yes, always current | No — additions stay on that device |
-| **Token connected** | Yes | Yes, committed to `database.json` |
+| Badge | Meaning |
+|---|---|
+| `● Live` | Connected. Additions reach everyone immediately. |
+| `● N not shared` | N entries are waiting on this device to upload. |
+| `● Read only` | Firebase not configured; showing the committed list. |
+| `○ Offline` | Showing this device's cached copy. |
 
-Without a token an addition still works immediately on that device, and the badge shows how many entries have not been shared yet (`● 2 not shared`). They stay on top of the shared list until someone with a token adds them properly, at which point they merge in without duplicating.
+---
 
-The badge always says which mode is active: `● Reading shared list`, `● N not shared`, `● Shared`, or `○ Offline` when the app is showing a cached copy.
+## 🔧 Setting up Firebase
 
-### Giving someone add-for-everyone rights
+One-time, by one person. Everyone else just opens the app.
 
-1. They create a [fine-grained personal access token](https://github.com/settings/personal-access-tokens/new):
-   - **Repository access:** only this repository
-   - **Permissions:** Repository permissions → **Contents: Read and write**
-2. In the app: **⚙ Data** → paste the token → **Connect**.
+1. **Create the project** at [console.firebase.google.com](https://console.firebase.google.com) → Add project. Google Analytics is not needed.
+2. **Create the database:** Build → Realtime Database → Create Database. Pick the region closest to you and start in **locked mode** — the rules below replace the defaults.
+3. **Enable anonymous sign-in:** Build → Authentication → Get started → Sign-in method → Anonymous → Enable. This is what lets the rules require authentication without asking anyone to log in.
+4. **Register a web app:** Project settings → General → Your apps → Web (`</>`). Copy the `firebaseConfig` object it shows you.
+5. **Paste it into `firebase-config.js`** in this repository and commit. These values are *not* secrets — Firebase web config is meant to be public, and the rules below are what actually protect the data.
+6. **Apply the security rules** under Realtime Database → Rules:
 
-Give each person their own token so one can be revoked without disturbing the others. The token is validated before it is stored, kept in that browser's `localStorage`, never committed, and sent nowhere but `api.github.com`. Anyone who can use that device can read it, so avoid shared machines.
+```json
+{
+  "rules": {
+    "meta": {
+      ".read": true,
+      ".write": "auth != null && !data.exists()"
+    },
+    "lists": {
+      ".read": true,
+      "$category": {
+        ".validate": "$category.matches(/^(boats|locations|crew|divers)$/)",
+        "$entry": {
+          ".write": "auth != null",
+          ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 200"
+        }
+      }
+    }
+  }
+}
+```
 
-> **⚠️ A Contents: Read and write token can change any file in the repository, not just `database.json`.** Hand one out only to people trusted with the app's source, and prefer letting one or two people do the adding for the rest.
+These allow anyone to read, and any signed-in (anonymous) device to add or correct an entry. `meta/seeded` can only be written once, which is what stops two people opening the app simultaneously from seeding the lists twice.
 
-Simultaneous edits are safe: a save that collides with someone else's commit is retried once against the newer file, taking the union of both sides, so nobody's addition is overwritten.
+On first run the app copies `database.json` into the database automatically, so the current roster carries over with no manual import.
 
-Deleting a shared entry requires a token — without one, a removal made in the JSON editor reappears on the next load, because the shared copy is the base. The editor says so when it happens.
+> **⚠️ Anyone who can open the app can add and remove entries.** That is inherent to having no login. It suits an internal tool; it is not a permission system. If you later need one, replace anonymous sign-in with Google sign-in and change `auth != null` to check specific accounts.
 
-> **⚠️ This repository is public.** Everything in `database.json`, crew phone numbers included, is readable by anyone via the repo and the Pages site, and stays in git history permanently. Making the repository private later hides it from that point on but does not retract copies already taken.
+> **⚠️ Crew phone numbers will be stored on Google servers** as well as in this public repository. If that is a problem, keep the numbers out of the crew entries.
+
+---
+
+## 💾 The Data panel
+
+The **⚙ Data** button is not needed for day-to-day use. It exists for:
+
+- checking the connection state
+- correcting a spelling or removing someone, by editing the lists as JSON
+- **Export** for a backup, **Import** to restore one
+
+Removals made here only stick while Firebase is connected. In read-only mode the committed list is the base, so a removal reappears on reload — the panel says so when it happens.
 
 ---
 
@@ -80,11 +115,12 @@ Instead of computing consumption based on generic distance-to-burn ratios, this 
 
 ```text
 trip-generator-app/
-├── index.html       # Application interface layout, entry fields, and action buttons
-├── style.css        # Responsive layouts, input grids, and status toast animations
-├── app.js           # Core state management, text compiling, and calculation utilities
-├── store.js         # Data layer: localStorage, GitHub sync, conflict merging
-├── settings.js      # Data panel: sync setup, JSON editor, export/import
-├── database.json    # The shared lists (boats, locations, crew, divers)
-├── .nojekyll        # Serves the files as-is on GitHub Pages
-└── README.md        # Project documentation
+├── index.html          # Application interface layout, entry fields, and action buttons
+├── style.css           # Responsive layouts, input grids, and status toast animations
+├── app.js              # Core state management, text compiling, and calculation utilities
+├── store.js            # Data layer: Firebase, offline cache, committed fallback
+├── settings.js         # Data panel: connection state, JSON editor, export/import
+├── firebase-config.js  # Firebase project settings (public by design)
+├── database.json       # Seed and offline fallback for the shared lists
+├── .nojekyll           # Serves the files as-is on GitHub Pages
+└── README.md           # Project documentation
