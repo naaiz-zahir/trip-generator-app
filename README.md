@@ -48,12 +48,11 @@ One-time, by one person. Everyone else just opens the app.
   "rules": {
     "meta": {
       ".read": true,
-      ".write": "auth != null && !data.exists()"
+      ".write": "auth != null"
     },
     "lists": {
       ".read": true,
       "$category": {
-        ".validate": "$category.matches(/^(boats|locations|crew|divers)$/)",
         "$entry": {
           ".write": "auth != null",
           ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 200"
@@ -64,7 +63,12 @@ One-time, by one person. Everyone else just opens the app.
 }
 ```
 
-These allow anyone to read, and any signed-in (anonymous) device to add or correct an entry. `meta/seeded` can only be written once, which is what stops two people opening the app simultaneously from seeding the lists twice.
+These allow anyone to read, and any signed-in (anonymous) device to add or correct an entry.
+
+Two details matter, and getting either wrong shows up as `permission_denied` in the browser console:
+
+- **Write is granted at `lists/<category>/<entry>`, not at `lists`.** Firebase checks permission at the node being written, so the app adds entries one at a time rather than writing the whole `lists` node at once. Do not narrow this further.
+- **`meta` must stay writable.** `meta/seeded` is a claim that stops two devices seeding at the same moment, and it has to be re-takeable — otherwise a database that is emptied, or whose first seeding attempt dies part-way, can never be re-seeded.
 
 On first run the app copies `database.json` into the database automatically, so the current roster carries over with no manual import.
 

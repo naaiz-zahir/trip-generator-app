@@ -34,16 +34,41 @@ const FirebaseBackend = {
         return !!FIREBASE_SETTINGS.databaseURL && !!FIREBASE_SETTINGS.apiKey;
     },
 
+    // The SDK is fetched here rather than by <script> tags in the page. Three
+    // blocking tags from a CDN mean nothing renders until they arrive, which on
+    // a poor signal is a blank app; loading them from JS lets the committed
+    // list paint first and the live connection catch up.
     get available() {
-        return this.configured && typeof firebase !== 'undefined';
+        return this.configured;
+    },
+
+    loadScript(src) {
+        return new Promise((resolve, reject) => {
+            const el = document.createElement('script');
+            el.src = src;
+            el.async = false;            // preserve order between the modules
+            el.onload = () => resolve();
+            el.onerror = () => reject(new Error(`Could not load ${src}`));
+            document.head.appendChild(el);
+        });
+    },
+
+    async loadSdk() {
+        if (typeof firebase !== 'undefined') return;
+        const base = 'https://www.gstatic.com/firebasejs/10.12.0';
+        for (const module of ['firebase-app-compat.js', 'firebase-auth-compat.js', 'firebase-database-compat.js']) {
+            await this.loadScript(`${base}/${module}`);
+        }
+        if (typeof firebase === 'undefined') throw new Error('Firebase SDK did not initialise');
     },
 
     // Signs in anonymously so the rules can require auth without asking anyone
     // to log in. The account is per-device and carries no personal data.
     async connect() {
         if (this.ready) return;
-        if (!this.available) throw new Error('Firebase is not configured');
+        if (!this.configured) throw new Error('Firebase is not configured');
 
+        await this.loadSdk();
         firebase.initializeApp(FIREBASE_SETTINGS);
         await firebase.auth().signInAnonymously();
         this.db = firebase.database();
@@ -75,14 +100,11 @@ const FirebaseBackend = {
         });
         if (!claim.committed) return false;
 
-        const payload = {};
-        CATEGORIES.forEach(key => {
-            payload[key] = {};
-            seed[key].forEach(value => {
-                payload[key][this.db.ref().push().key] = value;
-            });
-        });
-        await this.db.ref('lists').set(payload);
+        // Seed one entry at a time. A single set() on `lists` would be a write
+        // at that node, which the rules deliberately do not grant — they allow
+        // writes only at lists/<category>/<entry>, which is what push() does.
+        await Promise.all(CATEGORIES.flatMap(key =>
+            seed[key].map(value => this.add(key, value))));
         return true;
     }
 };
@@ -102,21 +124,39 @@ const Store = {
         return CATEGORIES.reduce((n, key) => n + extras[key].length, 0);
     },
 
+    // Never make the first paint wait on the network. The committed list (or
+    // this device's cache) renders immediately, and the live list replaces it
+    // through onChange as soon as Firebase answers. On a poor signal that is
+    // the difference between a usable app and a blank screen.
     async load() {
-        if (FirebaseBackend.available) {
-            try {
-                await FirebaseBackend.connect();
-                await this.firstSnapshot();
-                this.source = 'firebase';
-                await this.flushExtras();
-                return this.data;
-            } catch (err) {
-                console.warn('Firebase unavailable, falling back to the committed list:', err);
-            }
-        }
+        if (!FirebaseBackend.available) return this.loadFallback();
+
+        const live = (async () => {
+            await FirebaseBackend.connect();
+            await this.firstSnapshot();
+            this.source = 'firebase';
+            await this.flushExtras();
+            return this.data;
+        })();
+
+        live
+            .then(data => { if (this.onChange) this.onChange(data); })
+            .catch(err => console.warn('Firebase unavailable, staying on the committed list:', err));
+
+        const quick = await this.loadFallback().catch(() => null);
+        if (quick) return quick;
+
+        return live;   // nothing to fall back to; the live list is all there is
+    },
+
+    async loadFallback() {
+        // If Firebase got there first, leave its data alone.
+        if (this.live) return this.data;
 
         try {
-            this.shared = await this.fetchPublished();
+            const published = await this.fetchPublished();
+            if (this.live) return this.data;
+            this.shared = published;
             this.source = 'published';
             this.data = mergeData(this.shared, this.readExtras());
             this.cacheLocally();
@@ -125,6 +165,7 @@ const Store = {
             console.warn('Could not read the published list:', err);
         }
 
+        if (this.live) return this.data;
         const cached = this.readLocalCache();
         if (cached) {
             this.data = cached;
@@ -146,7 +187,7 @@ const Store = {
                 if (settled) return;
                 settled = true;
                 reject(new Error('Firebase did not return a usable list in time'));
-            }, 8000);
+            }, 15000);   // generous: a phone on a poor signal is the normal case
             const settle = fn => { if (settled) return; settled = true; clearTimeout(timer); fn(); };
 
             FirebaseBackend.subscribe(async lists => {
