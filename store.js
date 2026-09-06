@@ -63,15 +63,6 @@ const FirebaseBackend = {
         await this.db.ref(`lists/${category}`).push(value);
     },
 
-    async remove(category, value) {
-        const snap = await this.db.ref(`lists/${category}`).once('value');
-        const updates = {};
-        snap.forEach(child => {
-            if (child.val() === value) updates[child.key] = null;
-        });
-        if (Object.keys(updates).length) await this.db.ref(`lists/${category}`).update(updates);
-    },
-
     // First run only: copy database.json into the database. Guarded by a
     // transaction so that several people opening the app at once cannot each
     // seed it and produce duplicates.
@@ -163,7 +154,10 @@ const Store = {
                         await FirebaseBackend.seedIfEmpty(seed);
                         return;
                     } catch (err) {
+                        // Never fall through to publishing the empty snapshot:
+                        // let the timeout below drop us to the committed list.
                         console.warn('Could not seed the database:', err);
+                        return;
                     }
                 }
 
@@ -258,46 +252,6 @@ const Store = {
         this.writeExtras(extras);
         this.cacheLocally();
         return { shared: false };
-    },
-
-    async remove(category, value) {
-        if (!CATEGORIES.includes(category)) throw new Error(`Unknown category "${category}"`);
-        this.data[category] = this.data[category].filter(v => v !== value);
-
-        if (this.live) {
-            await FirebaseBackend.remove(category, value);
-            return { shared: true };
-        }
-        const extras = this.readExtras();
-        extras[category] = extras[category].filter(v => v !== value);
-        this.writeExtras(extras);
-        this.cacheLocally();
-        return { shared: false };
-    },
-
-    async replaceAll(next) {
-        const wanted = normalize(next);
-        if (!this.live) {
-            this.data = wanted;
-            this.writeExtras(subtract(this.data, this.shared));
-            this.cacheLocally();
-            return { shared: false };
-        }
-
-        const added   = subtract(wanted, this.data);
-        const removed = subtract(this.data, wanted);
-        for (const key of CATEGORIES) {
-            for (const value of added[key])   await FirebaseBackend.add(key, value);
-            for (const value of removed[key]) await FirebaseBackend.remove(key, value);
-        }
-        this.data = wanted;
-        return { shared: true };
-    },
-
-    // Removals that will not stick, because the shared copy is the base.
-    pendingRemovals() {
-        if (this.live) return [];
-        return CATEGORIES.flatMap(key => this.shared[key].filter(v => !this.data[key].includes(v)));
     }
 };
 
@@ -335,12 +289,3 @@ function mergeData(base, overlay) {
     return out;
 }
 
-// Entries present in a but not in b.
-function subtract(a, b) {
-    const out = {};
-    CATEGORIES.forEach(key => {
-        const seen = new Set(b[key] || []);
-        out[key] = (a[key] || []).filter(v => !seen.has(v));
-    });
-    return out;
-}

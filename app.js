@@ -314,6 +314,34 @@ function alertFlash(btnId) {
     }, 2000);
 }
 
+// ── Status badge ──────────────────────────────────────────────────────────────
+function updateSyncBadge() {
+    const badge = document.getElementById('syncBadge');
+    if (!badge) return;
+
+    const pending = Store.localOnly;
+
+    if (Store.live) {
+        badge.textContent = '\u25cf Live';
+        badge.className = 'sync-badge sync-on';
+        badge.title = 'Everyone sees the same list. Changes appear on other devices straight away.';
+    } else if (Store.source === 'cache') {
+        badge.textContent = '\u25cb Offline';
+        badge.className = 'sync-badge sync-off';
+        badge.title = 'Showing the last list saved on this device. It may be out of date.';
+    } else if (pending > 0) {
+        badge.textContent = `\u25cf ${pending} not shared`;
+        badge.className = 'sync-badge sync-pending';
+        badge.title = `${pending} ${pending === 1 ? 'entry is' : 'entries are'} on this device only, ` +
+                      'and will upload once the shared list is reachable.';
+    } else {
+        badge.textContent = '\u25cf Read only';
+        badge.className = 'sync-badge sync-read';
+        badge.title = 'Showing the list committed in the repository. ' +
+                      'Firebase is not reachable, so additions stay on this device.';
+    }
+}
+
 // ── Toast ─────────────────────────────────────────────────────────────────────
 function showToast(message, type = 'success') {
     let toast = document.getElementById('toast');

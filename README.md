@@ -26,7 +26,7 @@ The badge under the title says which state the app is in:
 |---|---|
 | `● Live` | Connected. Additions reach everyone immediately. |
 | `● N not shared` | N entries are waiting on this device to upload. |
-| `● Read only` | Firebase not configured; showing the committed list. |
+| `● Read only` | Firebase unreachable; showing the committed list. |
 | `○ Offline` | Showing this device's cached copy. |
 
 ---
@@ -67,7 +67,7 @@ These allow anyone to read, and any signed-in (anonymous) device to add or corre
 
 On first run the app copies `database.json` into the database automatically, so the current roster carries over with no manual import.
 
-**To confirm it worked:** open the app and check the badge under the title. `● Live` means everything is connected. `● Read only` means the app could not reach Firebase — open ⚙ Data, which says which part is missing, and check the browser console. The most common cause is anonymous sign-in not being enabled in step 3, which makes every write fail while reads still work.
+**To confirm it worked:** open the app and check the badge under the title. `● Live` means everything is connected. `● Read only` means the app could not reach Firebase — check the browser console. The most common cause is anonymous sign-in not being enabled in step 3, which makes every write fail while reads still work.
 
 > **⚠️ Anyone who can open the app can add and remove entries.** That is inherent to having no login. It suits an internal tool; it is not a permission system. If you later need one, replace anonymous sign-in with Google sign-in and change `auth != null` to check specific accounts.
 
@@ -75,15 +75,19 @@ On first run the app copies `database.json` into the database automatically, so 
 
 ---
 
-## 💾 The Data panel
+## ✏️ Editing the lists by hand
 
-The **⚙ Data** button is not needed for day-to-day use. It exists for:
+Adding people is done from the app. For anything else — correcting a spelling, removing someone who has left, reordering — edit the database directly:
 
-- checking the connection state
-- correcting a spelling or removing someone, by editing the lists as JSON
-- **Export** for a backup, **Import** to restore one
+**[Firebase Console](https://console.firebase.google.com/) → your project → Build → Realtime Database → Data**
 
-Removals made here only stick while Firebase is connected. In read-only mode the committed list is the base, so a removal reappears on reload — the panel says so when it happens.
+Expand `lists`, then the category. Click a value to edit it, use **+** to add a child, and **×** to delete one. Every open device updates within a second.
+
+Entries are stored as `lists/<category>/<random-key>: "<value>"` rather than as an array, so two people adding at the same moment cannot overwrite each other. When adding by hand the key can be anything unique — only the value matters.
+
+> **`database.json` in this repository is no longer the live data.** It is the seed the database was first populated from, and the fallback shown when Firebase is unreachable. Editing it does not change what the app shows. Update it only if you want to refresh that offline fallback.
+
+To start the lists over from `database.json`, delete the `meta` node in the console and reload the app — it re-seeds from the committed file.
 
 ---
 
@@ -121,7 +125,6 @@ trip-generator-app/
 ├── style.css           # Responsive layouts, input grids, and status toast animations
 ├── app.js              # Core state management, text compiling, and calculation utilities
 ├── store.js            # Data layer: Firebase, offline cache, committed fallback
-├── settings.js         # Data panel: connection state, JSON editor, export/import
 ├── firebase-config.js  # Firebase project settings (public by design)
 ├── database.json       # Seed and offline fallback for the shared lists
 ├── .nojekyll           # Serves the files as-is on GitHub Pages

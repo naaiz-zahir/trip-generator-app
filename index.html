@@ -17,8 +17,7 @@
         <h1 class="header-title">HCMG</h1>
         <p class="header-subtitle">Harbour Craft Message Generator</p>
         <div class="header-meta">
-            <span id="syncBadge" class="sync-badge sync-off">○ This device only</span>
-            <button type="button" id="settingsBtn" class="settings-btn" title="Data">⚙ Data</button>
+            <span id="syncBadge" class="sync-badge sync-read">● Loading…</span>
         </div>
     </header>
     
@@ -125,49 +124,11 @@
     <footer class="app-footer">For Coast Guard Second Squadron use only</footer>
     </div>
 
-    <div id="settingsModal" class="modal">
-        <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
-            <div class="modal-header">
-                <h2 id="settingsTitle">Data</h2>
-                <button type="button" id="settingsClose" class="modal-close" aria-label="Close">&times;</button>
-            </div>
-
-            <div class="modal-body">
-                <p class="modal-note">
-                    You do not need this to add people &mdash; the <strong>+</strong> buttons on the
-                    main screen already add for everyone. This is here for checking the
-                    connection, fixing an entry, and taking a backup.
-                </p>
-
-                <p id="connectionState" class="connection-state"></p>
-
-                <div class="form-group">
-                    <label for="dataEditor">Edit lists</label>
-                    <textarea id="dataEditor" rows="12" spellcheck="false"></textarea>
-                    <small class="field-hint">Correct a spelling or remove someone, then save.</small>
-                </div>
-
-                <div class="modal-actions">
-                    <button type="button" id="dataSaveBtn" class="primary-btn">Save data</button>
-                    <button type="button" id="dataReloadBtn" class="secondary-btn">Reload</button>
-                    <button type="button" id="dataExportBtn" class="secondary-btn">Export</button>
-                    <label class="secondary-btn file-btn">
-                        Import
-                        <input type="file" id="dataImportInput" accept="application/json,.json" hidden>
-                    </label>
-                </div>
-
-                <p id="settingsStatus" class="settings-status"></p>
-            </div>
-        </div>
-    </div>
-
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
     <script src="firebase-config.js"></script>
     <script src="store.js"></script>
     <script src="app.js"></script>
-    <script src="settings.js"></script>
 </body>
 </html>
