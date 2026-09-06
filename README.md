@@ -16,29 +16,37 @@ A streamlined, mobile-friendly web application designed to generate standardized
 
 ## 🗂 How the data is stored
 
-There is no server. The app reads and writes `database.json`, and each change lands in one of two places depending on whether GitHub sync is switched on.
+There is no server. `database.json` in this repository is the shared list, and everyone reads from it.
 
-| | Where changes go | Who sees them |
+**Reading needs no setup.** Whoever opens the app gets the current lists, and the app re-checks for changes whenever the tab is brought back into view, so a name added by one person appears for the rest without anyone reloading.
+
+**Adding for everyone needs a token.** A static site cannot commit on an anonymous visitor's behalf, so the person adding must supply GitHub credentials of their own:
+
+| | Sees everyone's entries | Can add for everyone |
 |---|---|---|
-| **Sync off** (default) | `localStorage` in that browser | That device only |
-| **Sync on** | A commit to `database.json` in this repository, via the GitHub REST API | Everyone, once Pages redeploys |
+| **No token** | Yes, always current | No — additions stay on that device |
+| **Token connected** | Yes | Yes, committed to `database.json` |
 
-The badge under the app title always says which mode is active, and every save toast says where the change actually landed.
+Without a token an addition still works immediately on that device, and the badge shows how many entries have not been shared yet (`● 2 not shared`). They stay on top of the shared list until someone with a token adds them properly, at which point they merge in without duplicating.
 
-On a device with sync off, edits are still durable — they survive reloads and stay in the browser — they simply never leave that device. **Export** / **Import** in the Data panel moves a database between devices without a token.
+The badge always says which mode is active: `● Reading shared list`, `● N not shared`, `● Shared`, or `○ Offline` when the app is showing a cached copy.
 
-### Turning on sync
+### Giving someone add-for-everyone rights
 
-1. Create a [fine-grained personal access token](https://github.com/settings/personal-access-tokens/new):
-   - **Repository access:** only `naaiz-zahir/trip-generator-app`
+1. They create a [fine-grained personal access token](https://github.com/settings/personal-access-tokens/new):
+   - **Repository access:** only this repository
    - **Permissions:** Repository permissions → **Contents: Read and write**
-2. Open **⚙ Data** in the app, paste the token, confirm the repository and branch, and press **Connect**.
+2. In the app: **⚙ Data** → paste the token → **Connect**.
 
-The token is validated before it is stored, and it is kept in that browser's `localStorage` only — it is never committed and never sent anywhere but `api.github.com`. Anyone who can use that device can read it, so set it up only on personal devices, and give each person their own token so one can be revoked without affecting the rest.
+Give each person their own token so one can be revoked without disturbing the others. The token is validated before it is stored, kept in that browser's `localStorage`, never committed, and sent nowhere but `api.github.com`. Anyone who can use that device can read it, so avoid shared machines.
 
-Concurrent edits are handled: a save that collides with someone else's commit is retried once against the newer file, taking the union of both sides, so a change made elsewhere is never overwritten.
+> **⚠️ A Contents: Read and write token can change any file in the repository, not just `database.json`.** Hand one out only to people trusted with the app's source, and prefer letting one or two people do the adding for the rest.
 
-> **⚠️ This repository is public.** Anything saved to `database.json` — including crew phone numbers — is readable by anyone on the internet, both through the repo and through the Pages site. If that is not intended, either keep phone numbers out of the crew entries, or move this to a private repository (note that Pages on a private repo requires a paid GitHub plan).
+Simultaneous edits are safe: a save that collides with someone else's commit is retried once against the newer file, taking the union of both sides, so nobody's addition is overwritten.
+
+Deleting a shared entry requires a token — without one, a removal made in the JSON editor reappears on the next load, because the shared copy is the base. The editor says so when it happens.
+
+> **⚠️ This repository is public.** Everything in `database.json`, crew phone numbers included, is readable by anyone via the repo and the Pages site, and stays in git history permanently. Making the repository private later hides it from that point on but does not retract copies already taken.
 
 ---
 

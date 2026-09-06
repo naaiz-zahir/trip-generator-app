@@ -20,7 +20,36 @@ document.addEventListener("DOMContentLoaded", () => {
             const el = document.getElementById(id);
             if (el) el.addEventListener('input', generateMessage);
         });
+
+    // Pick up names other people have added, without a manual reload. Checkbox
+    // ticks and dropdown choices are preserved across a refresh, so this is
+    // safe to run while a message is half filled in.
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') refreshFromShared();
+    });
+    window.addEventListener('online', refreshFromShared);
 });
+
+// Re-reads the shared list quietly. Unlike initDatabase it stays silent on
+// failure — a refresh that cannot reach GitHub should not interrupt someone
+// mid-message when the list already on screen is perfectly usable.
+let lastRefresh = 0;
+async function refreshFromShared() {
+    if (Date.now() - lastRefresh < 30000) return;   // at most every 30s
+    lastRefresh = Date.now();
+    try {
+        const before = JSON.stringify(Store.data);
+        const data = await Store.load();
+        if (JSON.stringify(data) === before) return;
+        applyData(data);
+        refreshUI();
+        generateMessage();
+        updateSyncBadge();
+        showToast('\u{1f504} List updated');
+    } catch (err) {
+        console.warn('Background refresh failed:', err);
+    }
+}
 
 // Loads the database: GitHub sync if configured, otherwise the local copy.
 async function initDatabase() {

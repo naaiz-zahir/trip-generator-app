@@ -1,26 +1,31 @@
 // ── Data store ────────────────────────────────────────────────────────────────
 // Runs entirely on GitHub Pages. No backend, no third-party service.
 //
-// Three layers, in priority order:
-//   1. GitHub sync   — optional. Reads/writes database.json in this repo through
-//                      the GitHub REST API using a token the user pastes into
-//                      Settings. Shared across everyone who configures it.
-//   2. localStorage  — always on. Survives reloads, private to the device.
-//   3. database.json — the copy committed to the repo, served by Pages. Used as
-//                      the seed on a fresh device and as an offline fallback.
+// Reading is the same for everyone and needs no setup: the app always starts
+// from the published database.json, so a name committed by one person shows up
+// for everybody else on their next load or refresh.
+//
+// Writing is what differs. With a GitHub token configured, an addition is
+// committed to database.json and becomes everyone's. Without one, it is kept
+// as a "local extra" — layered on top of the published list on this device so
+// the person can use it immediately, but invisible to everyone else until
+// somebody with a token commits it.
 
 const STORE_KEYS = {
-    data:  'hcmg.database',
-    sync:  'hcmg.sync',
-    stamp: 'hcmg.database.savedAt'
+    data:   'hcmg.database',
+    extras: 'hcmg.localExtras',
+    sync:   'hcmg.sync',
+    stamp:  'hcmg.database.savedAt'
 };
 
 const CATEGORIES = ['boats', 'locations', 'crew', 'divers'];
 
 const Store = {
-    data: { boats: [], locations: [], crew: [], divers: [] },
+    data:   { boats: [], locations: [], crew: [], divers: [] },  // what the UI shows
+    remote: { boats: [], locations: [], crew: [], divers: [] },  // what everyone shares
     sha: null,          // blob sha of database.json, needed to write it back
-    source: 'none',     // where the loaded data came from
+    source: 'none',     // 'github' | 'published' | 'cache'
+    lastLoadedAt: null,
 
     // ── Sync configuration ────────────────────────────────────────────────────
     getSyncConfig() {
@@ -40,6 +45,12 @@ const Store = {
         return !!(cfg && cfg.token && cfg.repo);
     },
 
+    // Entries this device added that are not in the shared list yet.
+    get localOnly() {
+        const extras = this.readExtras();
+        return CATEGORIES.reduce((n, key) => n + extras[key].length, 0);
+    },
+
     // Guess owner/repo from the Pages URL so Settings can pre-fill it.
     guessRepo() {
         const host = location.hostname;              // naaiz-zahir.github.io
@@ -53,36 +64,43 @@ const Store = {
     },
 
     // ── Loading ───────────────────────────────────────────────────────────────
+    // Always tries the shared copy first so the lists stay current for everyone.
+    // The cached copy is a fallback for being offline, never the primary source
+    // — otherwise one local addition would freeze this device on a stale list.
     async load() {
-        if (this.syncEnabled) {
-            try {
+        try {
+            if (this.syncEnabled) {
                 const remote = await this.fetchFromGitHub();
-                this.data = normalize(remote.data);
+                this.remote = normalize(remote.data);
                 this.sha = remote.sha;
                 this.source = 'github';
-                this.cacheLocally();
-                return this.data;
-            } catch (err) {
-                console.warn('GitHub sync read failed, falling back:', err);
+            } else {
+                this.remote = await this.fetchPublished();
+                this.source = 'published';
             }
+            // Local extras ride on top until someone commits them.
+            this.data = mergeData(this.remote, this.readExtras());
+            this.lastLoadedAt = new Date();
+            this.cacheLocally();
+            return this.data;
+        } catch (err) {
+            console.warn('Could not reach the shared list, using cache:', err);
         }
 
         const cached = this.readLocalCache();
         if (cached) {
             this.data = cached;
-            this.source = 'local';
-            // Refresh the sha in the background so a later save can succeed.
-            if (this.syncEnabled) this.refreshSha();
+            this.source = 'cache';
             return this.data;
         }
+        throw new Error('Could not load the crew and diver lists, and nothing is cached yet');
+    },
 
-        // Fresh device with no sync: seed from the committed file.
+    // The copy GitHub Pages serves. Readable by anyone, no token, no rate limit.
+    async fetchPublished() {
         const res = await fetch(`database.json?ts=${Date.now()}`, { cache: 'no-store' });
         if (!res.ok) throw new Error(`Could not read database.json (HTTP ${res.status})`);
-        this.data = normalize(await res.json());
-        this.source = 'repo';
-        this.cacheLocally();
-        return this.data;
+        return normalize(await res.json());
     },
 
     readLocalCache() {
@@ -101,9 +119,25 @@ const Store = {
         }
     },
 
+    readExtras() {
+        try {
+            const raw = localStorage.getItem(STORE_KEYS.extras);
+            return raw ? normalize(JSON.parse(raw)) : normalize({});
+        } catch { return normalize({}); }
+    },
+
+    writeExtras(extras) {
+        try {
+            const empty = CATEGORIES.every(k => extras[k].length === 0);
+            if (empty) localStorage.removeItem(STORE_KEYS.extras);
+            else localStorage.setItem(STORE_KEYS.extras, JSON.stringify(extras));
+        } catch (err) {
+            console.warn('Could not record local additions:', err);
+        }
+    },
+
     // ── Mutating ──────────────────────────────────────────────────────────────
-    // Adds a value and persists. Returns { synced: bool } so the caller can tell
-    // the user whether the change left this device.
+    // Returns { synced } so the caller can say whether the change left this device.
     async add(category, value) {
         if (!CATEGORIES.includes(category)) throw new Error(`Unknown category "${category}"`);
         const trimmed = String(value).trim();
@@ -111,19 +145,40 @@ const Store = {
         if (this.data[category].some(v => v.toLowerCase() === trimmed.toLowerCase())) {
             throw new Error(`"${trimmed}" already exists`);
         }
+
         this.data[category] = [...this.data[category], trimmed].sort(collate);
+        if (!this.syncEnabled) {
+            const extras = this.readExtras();
+            extras[category] = [...new Set([...extras[category], trimmed])].sort(collate);
+            this.writeExtras(extras);
+        }
         return this.persist(`Add ${trimmed} to ${category}`);
     },
 
     async remove(category, value) {
         if (!CATEGORIES.includes(category)) throw new Error(`Unknown category "${category}"`);
         this.data[category] = this.data[category].filter(v => v !== value);
+        if (!this.syncEnabled) {
+            const extras = this.readExtras();
+            extras[category] = extras[category].filter(v => v !== value);
+            this.writeExtras(extras);
+        }
         return this.persist(`Remove ${value} from ${category}`);
     },
 
     async replaceAll(next, message = 'Edit database') {
         this.data = normalize(next);
+        if (!this.syncEnabled) this.writeExtras(subtract(this.data, this.remote));
         return this.persist(message);
+    },
+
+    // Anything the editor removed that is in the shared list will come back on
+    // the next load, because the shared copy is the base. Let the UI say so.
+    pendingRemovals() {
+        if (this.syncEnabled) return [];
+        return CATEGORIES.flatMap(key =>
+            this.remote[key].filter(v => !this.data[key].includes(v))
+        );
     },
 
     async persist(message) {
@@ -155,15 +210,6 @@ const Store = {
         return { data: JSON.parse(decodeBase64(json.content)), sha: json.sha };
     },
 
-    async refreshSha() {
-        try {
-            const remote = await this.fetchFromGitHub();
-            this.sha = remote.sha;
-        } catch (err) {
-            console.warn('Could not refresh file sha:', err);
-        }
-    },
-
     async pushToGitHub(message, isRetry = false) {
         const cfg = this.getSyncConfig();
         const branch = cfg.branch || 'main';
@@ -192,6 +238,10 @@ const Store = {
         if (!res.ok) throw new Error(await describeError(res));
         const json = await res.json();
         this.sha = json.content.sha;
+
+        // Everything is in the shared copy now, so nothing is local-only.
+        this.remote = normalize(this.data);
+        this.writeExtras(normalize({}));
         return json;
     },
 
@@ -222,10 +272,20 @@ function normalize(raw) {
 }
 
 // Union of both sides, so a concurrent edit elsewhere is never dropped.
-function mergeData(remote, local) {
+function mergeData(base, overlay) {
     const out = {};
     CATEGORIES.forEach(key => {
-        out[key] = [...new Set([...(remote[key] || []), ...(local[key] || [])])].sort(collate);
+        out[key] = [...new Set([...(base[key] || []), ...(overlay[key] || [])])].sort(collate);
+    });
+    return out;
+}
+
+// Entries present in a but not in b.
+function subtract(a, b) {
+    const out = {};
+    CATEGORIES.forEach(key => {
+        const seen = new Set(b[key] || []);
+        out[key] = (a[key] || []).filter(v => !seen.has(v));
     });
     return out;
 }

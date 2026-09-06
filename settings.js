@@ -5,14 +5,27 @@ function updateSyncBadge() {
     const badge = document.getElementById('syncBadge');
     if (!badge) return;
 
+    const pending = Store.localOnly;
+
     if (Store.syncEnabled) {
-        badge.textContent = Store.source === 'github' ? '● Synced' : '● Sync configured';
+        badge.textContent = '● Shared';
         badge.className = 'sync-badge sync-on';
-        badge.title = `Changes are committed to ${Store.getSyncConfig().repo}`;
+        badge.title = `Everything you add is committed to ${Store.getSyncConfig().repo} for everyone.`;
+    } else if (pending > 0) {
+        badge.textContent = `● ${pending} not shared`;
+        badge.className = 'sync-badge sync-pending';
+        badge.title = `${pending} ${pending === 1 ? 'entry is' : 'entries are'} on this device only. ` +
+                      'Connect a token in Data to share them with everyone.';
     } else {
-        badge.textContent = '○ This device only';
+        badge.textContent = '● Reading shared list';
+        badge.className = 'sync-badge sync-read';
+        badge.title = 'You see everyone\u2019s entries. To add people for everyone, connect a token in Data.';
+    }
+
+    if (Store.source === 'cache') {
+        badge.textContent = '○ Offline';
         badge.className = 'sync-badge sync-off';
-        badge.title = 'Changes stay in this browser. Open Settings to sync them to GitHub.';
+        badge.title = 'Showing the last list saved on this device. It may be out of date.';
     }
 }
 
@@ -81,7 +94,8 @@ async function pullFromGitHub() {
     try {
         await initDatabase();
         document.getElementById('dataEditor').value = JSON.stringify(Store.data, null, 2);
-        settingsStatus(`Loaded from ${Store.source === 'github' ? 'GitHub' : Store.source}.`, 'ok');
+        const from = { github: 'GitHub', published: 'the published list', cache: 'this device\u2019s cache' };
+        settingsStatus(`Loaded from ${from[Store.source] || Store.source}.`, 'ok');
     } catch (err) {
         settingsStatus(err.message, 'error');
     }
@@ -103,7 +117,17 @@ async function saveEditedData() {
         refreshUI();
         generateMessage();
         updateSyncBadge();
-        settingsStatus(result.synced ? 'Saved and committed to GitHub.' : 'Saved on this device only.', 'ok');
+        const undone = Store.pendingRemovals();
+        if (undone.length) {
+            settingsStatus(
+                `Saved on this device. Note: ${undone.length} removed ` +
+                `${undone.length === 1 ? 'entry' : 'entries'} will reappear on reload — ` +
+                'deleting from the shared list needs a token.', 'warn');
+        } else {
+            settingsStatus(result.synced
+                ? 'Saved and committed. Everyone will see this.'
+                : 'Saved on this device only.', 'ok');
+        }
     } catch (err) {
         settingsStatus(err.message, 'error');
     }

@@ -518,6 +518,18 @@ header h1, .header-title {
     background: var(--input-bg);
 }
 
+.sync-read {
+    color: var(--text-muted);
+    background: var(--input-bg);
+    border-color: var(--border);
+}
+
+.sync-pending {
+    color: #ffc46b;
+    background: rgba(255, 176, 64, 0.12);
+    border-color: rgba(255, 176, 64, 0.45);
+}
+
 .settings-btn {
     font-size: 0.72rem;
     font-weight: 500;
@@ -666,3 +678,5 @@ header h1, .header-title {
 
 .settings-status-ok    { color: var(--teal-light); }
 .settings-status-error { color: #ff8a8a; }
+
+.settings-status-warn { color: #ffc46b; }
