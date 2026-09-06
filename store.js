@@ -63,13 +63,16 @@ const FirebaseBackend = {
         await this.db.ref(`lists/${category}`).push(value);
     },
 
-    // First run only: copy database.json into the database. Guarded by a
-    // transaction so that several people opening the app at once cannot each
-    // seed it and produce duplicates.
+    // Copies database.json into the database when it is empty. The claim is a
+    // transaction so several devices opening at once cannot each seed it, and
+    // it expires: without that, a seeder which died mid-write — or a database
+    // someone emptied by hand — would stay empty forever with the claim held.
     async seedIfEmpty(seed) {
-        const claim = await this.db.ref('meta/seeded').transaction(
-            current => (current ? undefined : { at: Date.now() })
-        );
+        const STALE_AFTER = 60000;
+        const claim = await this.db.ref('meta/seeded').transaction(current => {
+            const fresh = current && current.at && (Date.now() - current.at) < STALE_AFTER;
+            return fresh ? undefined : { at: Date.now() };
+        });
         if (!claim.committed) return false;
 
         const payload = {};
@@ -136,12 +139,17 @@ const Store = {
     firstSnapshot() {
         return new Promise((resolve, reject) => {
             let settled = false;
+            // Armed until something actually settles. Clearing it on the first
+            // snapshot instead would strand us with no fallback whenever that
+            // snapshot is empty and the seed does not complete.
             const timer = setTimeout(() => {
-                if (!settled) { settled = true; reject(new Error('Firebase did not respond')); }
+                if (settled) return;
+                settled = true;
+                reject(new Error('Firebase did not return a usable list in time'));
             }, 8000);
+            const settle = fn => { if (settled) return; settled = true; clearTimeout(timer); fn(); };
 
             FirebaseBackend.subscribe(async lists => {
-                clearTimeout(timer);
                 const empty = CATEGORIES.every(key => lists[key].length === 0);
                 if (empty && !settled) {
                     // Nothing there yet — populate it from the committed file.
@@ -165,12 +173,9 @@ const Store = {
                 this.data = lists;
                 this.cacheLocally();
 
-                if (!settled) { settled = true; resolve(this.data); }
+                if (!settled) settle(() => resolve(this.data));
                 else if (this.onChange) this.onChange(this.data);
-            }, err => {
-                clearTimeout(timer);
-                if (!settled) { settled = true; reject(err); }
-            });
+            }, err => settle(() => reject(err)));
         });
     },
 

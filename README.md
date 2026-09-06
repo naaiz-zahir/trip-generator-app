@@ -28,6 +28,7 @@ The badge under the title says which state the app is in:
 | `● N not shared` | N entries are waiting on this device to upload. |
 | `● Read only` | Firebase unreachable; showing the committed list. |
 | `○ Offline` | Showing this device's cached copy. |
+| `⚠ Not loaded` | Nothing could be loaded at all — check the connection and reload. |
 
 ---
 
@@ -87,7 +88,7 @@ Entries are stored as `lists/<category>/<random-key>: "<value>"` rather than as 
 
 > **`database.json` in this repository is no longer the live data.** It is the seed the database was first populated from, and the fallback shown when Firebase is unreachable. Editing it does not change what the app shows. Update it only if you want to refresh that offline fallback.
 
-To start the lists over from `database.json`, delete the `meta` node in the console and reload the app — it re-seeds from the committed file.
+To start the lists over from `database.json`, delete both the `lists` and `meta` nodes in the console and reload the app. Deleting `lists` alone also works: the seed claim in `meta` expires after a minute, so the next device to open the app re-seeds from the committed file.
 
 ---
 

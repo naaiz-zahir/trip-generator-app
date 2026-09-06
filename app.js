@@ -48,7 +48,10 @@ async function initDatabase() {
         generateMessage();
         updateSyncBadge();
     } catch (err) {
+        // Update the badge here too: leaving it on its initial "Loading…"
+        // makes a failed load look like one that never finished.
         console.error("Could not load database:", err);
+        updateSyncBadge();
         showToast(`\u26a0\ufe0f ${err.message}`, 'error');
     }
 }
@@ -334,6 +337,10 @@ function updateSyncBadge() {
         badge.className = 'sync-badge sync-pending';
         badge.title = `${pending} ${pending === 1 ? 'entry is' : 'entries are'} on this device only, ` +
                       'and will upload once the shared list is reachable.';
+    } else if (Store.source === 'none') {
+        badge.textContent = '\u26a0 Not loaded';
+        badge.className = 'sync-badge sync-pending';
+        badge.title = 'The lists could not be loaded. Check the connection and reload.';
     } else {
         badge.textContent = '\u25cf Read only';
         badge.className = 'sync-badge sync-read';
