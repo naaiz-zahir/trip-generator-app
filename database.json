@@ -1,21 +1,53 @@
 {
   "boats": [
-    "Sea Dragon",
-    "Dive Master"
+    "HC110",
+    "HC112",
+    "HC113",
+    "HC139"
   ],
   "locations": [
-    "Malé",
-    "Hulhumalé",
-    "Maafushi",
-    "Aarah"
+    "Aarah",
+    "Girifushi",
+    "Hulhumale",
+    "Location",
+    "Male'",
+    "Thilafushi",
+    "Vilimale"
   ],
   "crew": [
-    "Ali Shah",
-    "Ahmed Ibrahim",
-    "Maain Mahir"
+    "7479 SGT Ahmed Sham — 9486171",
+    "7679 LCPL Riffath Ahmed — 9982026",
+    "8358 LCPL Ali Risfaan — 9679873",
+    "8394 LCPL Aiminath Aana — 9350530",
+    "8540 LCPL Ahmed Rafaahu Tholhath — 7488328",
+    "8560 LCPL Hussain Midhuhath — 9727178",
+    "8620 PTE Mohamed Shaugy — 9699723",
+    "8689 LCPL Ishaaq Shareef — 9245623",
+    "8740 LCPL Mohamed Samaan — 9885718",
+    "8874 PTE Shiyaadh Abdul Raheem — 9510605",
+    "8890 PTE Mohamed Maain Mahir — 9486517",
+    "8940 PTE Anaan Moosa — 9404984"
   ],
   "divers": [
-    "John Doe",
-    "Sarah Jenkins"
+    "2726 SFC Zaeem Ali",
+    "3502 SFC Adam Shameem",
+    "3905 SSGT Ahmed Imlaq",
+    "4022 SFC Mohamed Rishwaan",
+    "4074 SGT Ahmed Abdulla",
+    "4442 SSGT Hussain Moosa",
+    "5636 SSGT Ali Azmeem",
+    "6123 CPL Abdul Matheen Yusuf",
+    "6392 SSGT Ahmed Razeef",
+    "6617 SSGT Ahmed Sulaimaan",
+    "6891 SSGT Iqnaz Hussain",
+    "7417 SGT Ahmed Mohamed",
+    "7581 SGT Alim Ali",
+    "7824 CPL Hussain Shiruhaan",
+    "7925 CPL Ibrahim Ruhaam",
+    "7936 LCPL Ahmed Lakhfaan",
+    "7985 CPL Abdul Rahmaan Raahif",
+    "8210 CPL Mohamed Falaah",
+    "8345 LCPL Hassan Ahuzam",
+    "8494 LCPL Ibrahim Ahuzam"
   ]
 }
