@@ -26,6 +26,12 @@ document.addEventListener("DOMContentLoaded", () => {
     window.addEventListener('online', () => {
         if (!Store.live) initDatabase();
     });
+
+    // Rotating the phone changes how much room a preview may take.
+    window.addEventListener('resize', () => {
+        autosize(document.getElementById('messagePreview'));
+        autosize(document.getElementById('arrivalMessagePreview'));
+    });
 });
 
 // Read-only is easy to mistake for "working". Say why it happened, once.
@@ -256,6 +262,27 @@ ${arrivalTimeBlock}${crewBlock}${diversBlock}${metricsBlock}`;
     // 2. Arrival Message: Uses the isolated input field from the bottom of the form
     document.getElementById('arrivalMessagePreview').value =
     `${boatName} Arrived to ${destination} ${"@"}${actualArrivalTimeVal || '--:--'}`;
+
+    autosize(document.getElementById('messagePreview'));
+    autosize(document.getElementById('arrivalMessagePreview'));
+}
+
+// Grows a preview to fit its text instead of holding a fixed 12 rows, most of
+// which are blank on a phone. Capped so a long crew list still leaves the copy
+// button reachable.
+function autosize(el) {
+    if (!el) return;
+
+    // Desktop keeps the fixed rows it has always had.
+    if (window.innerWidth > 600) {
+        el.style.height = '';
+        return;
+    }
+
+    // Measure from zero, not 'auto': with rows="12" set, 'auto' still reports
+    // twelve rows and the box never shrinks to its content.
+    el.style.height = '0px';
+    el.style.height = `${Math.min(el.scrollHeight, Math.round(window.innerHeight * 0.5))}px`;
 }
 
 // ── Copy Button (Departure) ──────────────────────────────────────────────────

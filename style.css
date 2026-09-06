@@ -528,3 +528,110 @@ header h1, .header-title {
     border-color: rgba(255, 176, 64, 0.45);
 }
 
+
+/* ── Phones ─────────────────────────────────
+   Everyone uses this on a handset, usually one-handed and often on a moving
+   boat. Same design, sized for a thumb. */
+@media (max-width: 600px) {
+    body {
+        padding: 12px 10px calc(24px + env(safe-area-inset-bottom));
+    }
+
+    .app-container {
+        padding: 22px 16px calc(28px + env(safe-area-inset-bottom));
+        border-radius: 14px;
+    }
+
+    /* iOS zooms the page whenever a focused field is under 16px, which throws
+       the layout sideways mid-entry. 16px exactly avoids it. */
+    input[type="text"],
+    input[type="number"],
+    input[type="time"],
+    input[type="password"],
+    select,
+    textarea {
+        font-size: 16px;
+    }
+
+    /* The lists were capped at 130px with their own scrollbar: a scroll trap
+       that stalls the page whenever a thumb lands inside one. Let them run to
+       their full height and have the page scroll, which is what a thumb
+       expects. Picking crew is the main interaction here — it should not be
+       the fiddliest. */
+    .checkbox-grid {
+        max-height: none;
+        overflow-y: visible;
+        padding: 4px 12px;
+    }
+
+    .checkbox-item {
+        min-height: 44px;          /* a comfortable tap target */
+        margin-bottom: 0;
+        font-size: 0.95rem;
+    }
+
+    .checkbox-item + .checkbox-item {
+        border-top: 1px solid rgba(0, 194, 203, 0.08);
+    }
+
+    .checkbox-item label {
+        flex: 1;                    /* the whole row is tappable, not just the box */
+        padding: 11px 0;
+        cursor: pointer;
+    }
+
+    .checkbox-item input[type="checkbox"] {
+        width: 22px;
+        height: 22px;
+        margin-right: 12px;
+    }
+
+    .add-btn-small {
+        min-height: 40px;
+        padding: 8px 14px;
+        font-size: 0.8rem;
+    }
+
+    .add-btn {
+        min-width: 48px;
+        min-height: 48px;
+    }
+
+    /* Distance and speed belong together; the burn rate is a set-once default,
+       so it gets its own row instead of squeezing three labels into 312px. */
+    .metrics-row {
+        flex-wrap: wrap;
+    }
+
+    .metrics-row .form-group {
+        flex: 1 1 calc(50% - 6px);
+    }
+
+    .metrics-row .form-group:last-child {
+        flex-basis: 100%;
+    }
+
+    .message-actions {
+        gap: 10px;
+    }
+
+    .message-actions .primary-btn {
+        min-height: 52px;
+        font-size: 0.95rem;
+    }
+
+    .viber-square-button {
+        width: 52px;
+        height: 52px;
+        flex-shrink: 0;
+    }
+
+    /* Sized to its contents rather than a fixed 12 rows of mostly blank space. */
+    textarea {
+        min-height: 96px;
+    }
+
+    .header-logo { width: 54px; }
+    .header-title { font-size: 1.9rem; }
+    .app-footer { font-size: 0.62rem; }
+}
