@@ -42,7 +42,7 @@ function describeConnection() {
     if (!el) return;
 
     if (Store.live) {
-        el.textContent = `Connected to ${FIREBASE_CONFIG.projectId || 'Firebase'}. ` +
+        el.textContent = `Connected to ${FIREBASE_SETTINGS.projectId || 'Firebase'}. ` +
             'Anyone using the app sees the same list, and additions show up on other devices within a second.';
         el.className = 'connection-state connection-ok';
     } else if (Store.source === 'cache') {

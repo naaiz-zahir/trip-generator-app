@@ -16,6 +16,14 @@ const STORE_KEYS = {
 
 const CATEGORIES = ['boats', 'locations', 'crew', 'divers'];
 
+// The Firebase console hands you a snippet declaring `firebaseConfig`, so accept
+// that name as well as our own rather than failing silently on a verbatim paste.
+const FIREBASE_SETTINGS = (() => {
+    if (typeof FIREBASE_CONFIG !== 'undefined' && FIREBASE_CONFIG) return FIREBASE_CONFIG;
+    if (typeof firebaseConfig !== 'undefined' && firebaseConfig) return firebaseConfig;
+    return {};
+})();
+
 // ── Firebase backend ──────────────────────────────────────────────────────────
 const FirebaseBackend = {
     db: null,
@@ -23,9 +31,7 @@ const FirebaseBackend = {
 
     // Treated as unconfigured until a databaseURL is filled in.
     get configured() {
-        return typeof FIREBASE_CONFIG === 'object'
-            && !!FIREBASE_CONFIG.databaseURL
-            && !!FIREBASE_CONFIG.apiKey;
+        return !!FIREBASE_SETTINGS.databaseURL && !!FIREBASE_SETTINGS.apiKey;
     },
 
     get available() {
@@ -38,7 +44,7 @@ const FirebaseBackend = {
         if (this.ready) return;
         if (!this.available) throw new Error('Firebase is not configured');
 
-        firebase.initializeApp(FIREBASE_CONFIG);
+        firebase.initializeApp(FIREBASE_SETTINGS);
         await firebase.auth().signInAnonymously();
         this.db = firebase.database();
         this.ready = true;

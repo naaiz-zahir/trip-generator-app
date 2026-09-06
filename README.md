@@ -39,7 +39,7 @@ One-time, by one person. Everyone else just opens the app.
 2. **Create the database:** Build → Realtime Database → Create Database. Pick the region closest to you and start in **locked mode** — the rules below replace the defaults.
 3. **Enable anonymous sign-in:** Build → Authentication → Get started → Sign-in method → Anonymous → Enable. This is what lets the rules require authentication without asking anyone to log in.
 4. **Register a web app:** Project settings → General → Your apps → Web (`</>`). Copy the `firebaseConfig` object it shows you.
-5. **Paste it into `firebase-config.js`** in this repository and commit. These values are *not* secrets — Firebase web config is meant to be public, and the rules below are what actually protect the data.
+5. **Paste it into `firebase-config.js`** in this repository and commit. Paste the console's snippet as-is; either `firebaseConfig` or `FIREBASE_CONFIG` is accepted as the variable name. These values are *not* secrets — Firebase web config is meant to be public, and the rules below are what actually protect the data.
 6. **Apply the security rules** under Realtime Database → Rules:
 
 ```json
@@ -66,6 +66,8 @@ One-time, by one person. Everyone else just opens the app.
 These allow anyone to read, and any signed-in (anonymous) device to add or correct an entry. `meta/seeded` can only be written once, which is what stops two people opening the app simultaneously from seeding the lists twice.
 
 On first run the app copies `database.json` into the database automatically, so the current roster carries over with no manual import.
+
+**To confirm it worked:** open the app and check the badge under the title. `● Live` means everything is connected. `● Read only` means the app could not reach Firebase — open ⚙ Data, which says which part is missing, and check the browser console. The most common cause is anonymous sign-in not being enabled in step 3, which makes every write fail while reads still work.
 
 > **⚠️ Anyone who can open the app can add and remove entries.** That is inherent to having no login. It suits an internal tool; it is not a permission system. If you later need one, replace anonymous sign-in with Google sign-in and change `auth != null` to check specific accounts.
 
